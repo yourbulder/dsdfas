@@ -492,6 +492,13 @@
                     <div class="member-list" id="banned-list"></div>
                 </div>
             </div>
+
+            <!-- CLAIM ADMIN SECTION (New Addition) -->
+            <div id="claim-admin-section" style="display: none; flex-direction: column; gap: 5px; margin-top: 10px; margin-bottom: 5px;">
+                <input type="text" id="admin-key-input" placeholder="enter admin key" style="text-align:center; padding:8px; border:3px solid black; border-radius:15px; font-weight:bold; font-size:14px; outline:none;">
+                <div class="action-button" style="background:#fbbf24; color:black; font-size:14px; padding:8px;" onclick="claimAdmin()">CLAIM ADMIN</div>
+            </div>
+
             <div class="action-button btn-quit" onclick="quitGroup()">QUIT GROUP</div>
             <div class="name-display" id="display-name-group"></div>
         </div>
@@ -602,8 +609,9 @@
 
             const adminKey = Math.floor(1000 + Math.random() * 9000).toString();
             
+            // Save the adminKey to the database so others can claim it
             await db.ref(`groups/${groupId}`).set({
-                settings: { pass: rawPass, admin: myName },
+                settings: { pass: rawPass, admin: myName, adminKey: adminKey },
                 members: { [myName]: true }
             });
 
@@ -654,56 +662,13 @@
             chatModeBadge.innerText = "GROUP CHAT";
             chatModeBadge.style.backgroundColor = "#0ea5e9";
             
-            // Admin specific UI
+            // Trigger UI and Listeners based on role
             if (isGroupAdmin) {
-                document.getElementById('admin-key-display').style.display = 'block';
-                document.getElementById('display-admin-key').innerText = adminKey;
-                document.getElementById('admin-panel').style.display = 'block';
-                
-                // Track active members
-                const memRef = db.ref(`groups/${groupId}/members`);
-                memRef.on('value', (snap) => {
-                    const members = snap.val() || {};
-                    const listHtml = document.getElementById('member-list');
-                    listHtml.innerHTML = '';
-                    Object.keys(members).forEach(mem => {
-                        if(mem !== myName) {
-                            listHtml.innerHTML += `
-                                <div class="member-item">
-                                    <span>${mem}</span>
-                                    <div style="display:flex; gap:4px;">
-                                        <button class="kick-btn" onclick="kickMember('${mem}')">KICK</button>
-                                        <button class="ban-btn" onclick="banMember('${mem}')">BAN</button>
-                                    </div>
-                                </div>
-                            `;
-                        }
-                    });
-                    if (!listHtml.innerHTML) listHtml.innerHTML = `<div style="font-size:11px; color:gray; text-align:center;">No other active members</div>`;
-                });
-                groupListeners.push({ ref: memRef, event: 'value' });
-
-                // Track banned members
-                const bannedRef = db.ref(`groups/${groupId}/banned`);
-                bannedRef.on('value', (snap) => {
-                    const banned = snap.val() || {};
-                    const bannedHtml = document.getElementById('banned-list');
-                    bannedHtml.innerHTML = '';
-                    Object.keys(banned).forEach(mem => {
-                        bannedHtml.innerHTML += `
-                            <div class="member-item banned-item">
-                                <span>🚫 ${mem}</span>
-                                <button class="unban-btn" onclick="unbanMember('${mem}')">🔓 UNBAN</button>
-                            </div>
-                        `;
-                    });
-                    if (!bannedHtml.innerHTML) bannedHtml.innerHTML = `<div style="font-size:11px; color:gray; text-align:center;">No banned users</div>`;
-                });
-                groupListeners.push({ ref: bannedRef, event: 'value' });
-
+                enableAdminFeatures(adminKey);
             } else {
                 document.getElementById('admin-key-display').style.display = 'none';
                 document.getElementById('admin-panel').style.display = 'none';
+                document.getElementById('claim-admin-section').style.display = 'flex'; // Show claim section
             }
 
             // Cleanup on tab close
@@ -727,7 +692,7 @@
             kickRef.on('value', (snap) => {
                 if (snap.exists() && snap.val() === true) {
                     kickRef.remove();
-                    alert("You were kicked by the Admin! You can rejoin using the password.");
+                    alert("You were kicked by an Admin! You can rejoin using the password.");
                     quitGroup(true);
                 }
             });
@@ -737,7 +702,7 @@
             const banRef = db.ref(`groups/${groupId}/banned/${myName}`);
             banRef.on('value', (snap) => {
                 if (snap.exists() && snap.val() === true) {
-                    alert("You have been BANNED from this group by the Admin!");
+                    alert("You have been BANNED from this group by an Admin!");
                     quitGroup(true);
                 }
             });
@@ -746,36 +711,98 @@
             renderChat();
         }
 
+        function enableAdminFeatures(adminKey) {
+            document.getElementById('admin-key-display').style.display = 'block';
+            document.getElementById('display-admin-key').innerText = adminKey;
+            document.getElementById('admin-panel').style.display = 'block';
+            document.getElementById('claim-admin-section').style.display = 'none'; // Hide claim section
+            
+            // Track active members
+            const memRef = db.ref(`groups/${currentGroupId}/members`);
+            memRef.on('value', (snap) => {
+                const members = snap.val() || {};
+                const listHtml = document.getElementById('member-list');
+                listHtml.innerHTML = '';
+                Object.keys(members).forEach(mem => {
+                    if(mem !== myName) {
+                        listHtml.innerHTML += `
+                            <div class="member-item">
+                                <span>${mem}</span>
+                                <div style="display:flex; gap:4px;">
+                                    <button class="kick-btn" onclick="kickMember('${mem}')">KICK</button>
+                                    <button class="ban-btn" onclick="banMember('${mem}')">BAN</button>
+                                </div>
+                            </div>
+                        `;
+                    }
+                });
+                if (!listHtml.innerHTML) listHtml.innerHTML = `<div style="font-size:11px; color:gray; text-align:center;">No other active members</div>`;
+            });
+            groupListeners.push({ ref: memRef, event: 'value' });
+
+            // Track banned members
+            const bannedRef = db.ref(`groups/${currentGroupId}/banned`);
+            bannedRef.on('value', (snap) => {
+                const banned = snap.val() || {};
+                const bannedHtml = document.getElementById('banned-list');
+                bannedHtml.innerHTML = '';
+                Object.keys(banned).forEach(mem => {
+                    bannedHtml.innerHTML += `
+                        <div class="member-item banned-item">
+                            <span>🚫 ${mem}</span>
+                            <button class="unban-btn" onclick="unbanMember('${mem}')">🔓 UNBAN</button>
+                        </div>
+                    `;
+                });
+                if (!bannedHtml.innerHTML) bannedHtml.innerHTML = `<div style="font-size:11px; color:gray; text-align:center;">No banned users</div>`;
+            });
+            groupListeners.push({ ref: bannedRef, event: 'value' });
+        }
+
+        async function claimAdmin() {
+            if(isGroupAdmin) return;
+            const keyInput = document.getElementById('admin-key-input').value.trim();
+            if(!keyInput) return alert("Enter the admin key first!");
+
+            const snap = await db.ref(`groups/${currentGroupId}/settings/adminKey`).once('value');
+            if(snap.exists() && snap.val() === keyInput) {
+                isGroupAdmin = true;
+                alert("Success! You are now an Admin.");
+                document.getElementById('admin-key-input').value = "";
+                enableAdminFeatures(keyInput);
+            } else {
+                alert("Incorrect Admin Key!");
+            }
+        }
+
         // ADMIN FUNCTIONS: KICK, BAN, UNBAN
         function kickMember(memberName) {
             if(!isGroupAdmin) return;
             db.ref(`groups/${currentGroupId}/kicked/${memberName}`).set(true);
             db.ref(`groups/${currentGroupId}/members/${memberName}`).remove();
-            db.ref(`groups/${currentGroupId}/chat`).push({ sender: "System", msg: `${memberName} was kicked by Admin.` });
+            db.ref(`groups/${currentGroupId}/chat`).push({ sender: "System", msg: `${memberName} was kicked by an Admin.` });
         }
 
         function banMember(memberName) {
             if(!isGroupAdmin) return;
             db.ref(`groups/${currentGroupId}/banned/${memberName}`).set(true);
             db.ref(`groups/${currentGroupId}/members/${memberName}`).remove();
-            db.ref(`groups/${currentGroupId}/chat`).push({ sender: "System", msg: `${memberName} was BANNED by Admin.` });
+            db.ref(`groups/${currentGroupId}/chat`).push({ sender: "System", msg: `${memberName} was BANNED by an Admin.` });
         }
 
         function unbanMember(memberName) {
             if(!isGroupAdmin) return;
             db.ref(`groups/${currentGroupId}/banned/${memberName}`).remove();
-            db.ref(`groups/${currentGroupId}/chat`).push({ sender: "System", msg: `${memberName} was unbanned by Admin.` });
+            db.ref(`groups/${currentGroupId}/chat`).push({ sender: "System", msg: `${memberName} was unbanned by an Admin.` });
         }
 
         async function quitGroup(wasRemoved = false) {
             if (currentGroupId) {
+                // Clear all listeners so UI doesn't crash in background
                 groupListeners.forEach(listener => listener.ref.off(listener.event));
                 groupListeners = [];
 
-                if (isGroupAdmin) {
-                    await db.ref(`groups/${currentGroupId}`).remove();
-                    alert("You closed the group. Data deleted.");
-                } else if (!wasRemoved) {
+                if (!wasRemoved) {
                     db.ref(`groups/${currentGroupId}/chat`).push({ sender: "System", msg: `${myName} left the group.` });
                     await db.ref(`groups/${currentGroupId}/members/${myName}`).remove();
                 }
