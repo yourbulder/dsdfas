@@ -18,8 +18,9 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             gap: 20px;
+            padding: 20px;
         }
 
         /* --- LEFT PANEL (CHAT) --- */
@@ -72,7 +73,7 @@
         .msg-container {
             display: flex;
             flex-direction: column;
-            max-width: 80%;
+            max-width: 85%;
         }
 
         .msg-container.mine {
@@ -225,8 +226,9 @@
 
         .turn-indicator {
             font-weight: bold;
-            font-size: 20px;
+            font-size: 18px;
             margin: 15px 0;
+            text-align: center;
         }
 
         .tic-tac-toe {
@@ -246,6 +248,7 @@
             font-size: 60px;
             font-weight: bold;
             cursor: pointer;
+            user-select: none;
         }
         .cell.x { color: red; }
         .cell.o { color: #0ea5e9; }
@@ -267,7 +270,6 @@
             body {
                 flex-direction: column;
                 height: auto;
-                padding: 20px 0;
             }
         }
     </style>
@@ -322,7 +324,7 @@
                     pass :- <span id="display-room-pass"></span>
                 </div>
                 
-                <div class="turn-indicator" id="turn-indicator">YOUR TURN :- X</div>
+                <div class="turn-indicator" id="turn-indicator">WAITING FOR OPPONENT...</div>
                 
                 <div class="tic-tac-toe" id="board">
                     <div class="cell" onclick="makeMove(0)"></div>
@@ -357,8 +359,13 @@
         let currentTurn = "X";
         let gameActive = true;
 
-        // Chat States
-        let globalChat = JSON.parse(localStorage.getItem('karanGlobalChat')) || [];
+        // Chat Storage
+        let globalChat = [];
+        try {
+            globalChat = JSON.parse(localStorage.getItem('karanGlobalChat')) || [];
+        } catch (e) {
+            globalChat = [];
+        }
         let roomChat = [];
 
         // UI Elements
@@ -370,17 +377,15 @@
         const chatModeBadge = document.getElementById('chat-mode-badge');
         const nameInput = document.getElementById('your-name');
 
-        // Initialize Global Chat on load
         window.onload = () => {
             renderChat();
         };
 
-        // --- ROOM & PEER CONNECTION LOGIC ---
-        
-        function getRoomId() {
-            const rn = document.getElementById('room-name').value;
-            const rp = document.getElementById('room-pass').value;
-            return `karan-game-${rn}-${rp}`;
+        // --- SANITIZE ROOM ID FOR PEERJS ---
+        function getSanitizedRoomId() {
+            const rn = document.getElementById('room-name').value.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+            const rp = document.getElementById('room-pass').value.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+            return `karangame-${rn}-${rp}`;
         }
 
         function validateSetup() {
@@ -389,24 +394,37 @@
                 alert("Please enter 'your name' at the bottom first!");
                 return false;
             }
-            if (!document.getElementById('room-name').value || !document.getElementById('room-pass').value) {
+            if (!document.getElementById('room-name').value.trim() || !document.getElementById('room-pass').value.trim()) {
                 alert("Enter room name and password!");
                 return false;
             }
             return true;
         }
 
+        function cleanPeer() {
+            if (connection) {
+                connection.close();
+                connection = null;
+            }
+            if (peer) {
+                peer.destroy();
+                peer = null;
+            }
+        }
+
         function createRoom() {
             if(!validateSetup()) return;
+            cleanPeer();
             
             isHost = true;
             mySymbol = "X";
-            const roomId = getRoomId();
+            const roomId = getSanitizedRoomId();
             
             peer = new Peer(roomId); 
-            peer.on('open', (id) => {
+            peer.on('open', () => {
                 switchToGameView();
-                appendSystemMessage("Room created. Waiting for someone to join...", true);
+                appendSystemMessage("Room created. Waiting for someone to join...");
+                turnIndicator.innerText = "WAITING FOR OPPONENT...";
             });
 
             peer.on('connection', (conn) => {
@@ -414,49 +432,57 @@
                 setupConnectionListeners();
             });
 
-            peer.on('error', (err) => { alert("Error: " + err.type); });
+            peer.on('error', (err) => { 
+                if (err.type === 'unavailable-id') {
+                    alert("This Room Name & Password combo is currently active. Try joining instead or pick another name!");
+                } else {
+                    alert("Room Error: " + err.type); 
+                }
+                quitRoom(false);
+            });
         }
 
         function joinRoom() {
             if(!validateSetup()) return;
+            cleanPeer();
 
             isHost = false;
             mySymbol = "O";
-            const roomId = getRoomId();
+            const roomId = getSanitizedRoomId();
             
             peer = new Peer(); 
             peer.on('open', () => {
                 connection = peer.connect(roomId);
+                
                 connection.on('open', () => {
                     setupConnectionListeners();
-                    // Send Handshake to check for duplicate names
                     connection.send({ type: 'handshake', name: myName });
                 });
             });
-            peer.on('error', (err) => { alert("Error connecting to room!"); });
+
+            peer.on('error', () => { 
+                alert("Could not connect! Room not found or wrong details."); 
+                quitRoom(false);
+            });
         }
 
         function setupConnectionListeners() {
             connection.on('data', (data) => {
-                // Handshake Logic for Unique Names
                 if (data.type === 'handshake') {
                     friendName = data.name;
                     if (friendName === myName) {
-                        // Name is taken! Give them a unique number
-                        friendName = myName + "_" + Math.floor(Math.random() * 1000);
+                        myName = myName + "_" + Math.floor(Math.random() * 1000);
                     }
-                    // Reply to joiner
-                    connection.send({ type: 'handshake-reply', approvedName: friendName, hostName: myName });
+                    connection.send({ type: 'handshake-reply', approvedName: myName, hostName: myName });
                     finalizeRoomJoin();
                 } 
                 else if (data.type === 'handshake-reply') {
                     myName = data.approvedName;
                     friendName = data.hostName;
                     document.getElementById('display-name').innerText = myName;
-                    nameInput.value = myName; // update their input box
+                    nameInput.value = myName;
                     finalizeRoomJoin();
                 }
-                // Chat & Game Logic
                 else if (data.type === 'chat') {
                     addMessageToUI(data.sender, data.msg, false);
                 } 
@@ -465,19 +491,20 @@
                 } 
                 else if (data.type === 'new-game') {
                     resetBoard();
-                    appendSystemMessage(`${friendName} started a new game!`, true);
+                    appendSystemMessage(`${friendName} started a new game!`);
                 }
             });
 
             connection.on('close', () => {
-                alert("The other player left the room.");
-                quitRoom(false); // false means don't try to send a close event again
+                alert("The other player disconnected.");
+                quitRoom(false);
             });
         }
 
         function finalizeRoomJoin() {
             switchToGameView();
-            appendSystemMessage(`${friendName} joined the room!`, true);
+            appendSystemMessage(`${friendName} joined the room!`);
+            resetBoard();
         }
 
         // --- UI SWITCHING & QUIT LOGIC ---
@@ -491,30 +518,26 @@
             document.getElementById('display-room-pass').innerText = document.getElementById('room-pass').value;
             
             chatModeBadge.innerText = "PRIVATE ROOM";
-            chatModeBadge.style.backgroundColor = "#dc2626"; // Red to show private
-            roomChat = []; // Clear private chat history for new room
+            chatModeBadge.style.backgroundColor = "#dc2626";
+            roomChat = [];
             renderChat();
-            updateTurnIndicator();
         }
 
         function quitRoom(triggerClose = true) {
             inRoom = false;
             
-            // Disconnect PeerJS safely
-            if (triggerClose && connection) connection.close();
-            if (peer) {
-                peer.destroy();
-                peer = null;
+            if (triggerClose && connection) {
+                connection.close();
             }
+            cleanPeer();
 
-            // Reset UI
             lobbyView.style.display = 'flex';
             gameView.style.display = 'none';
             chatModeBadge.innerText = "GLOBAL";
             chatModeBadge.style.backgroundColor = "#1e692c";
             
             resetBoard();
-            renderChat(); // Reloads Global Chat
+            renderChat();
         }
 
         // --- CHAT LOGIC ---
@@ -522,21 +545,24 @@
         function handleChatKeyPress(event) {
             if (event.key === 'Enter') {
                 let tempName = nameInput.value.trim() || "Anonymous";
-                if (inRoom) tempName = myName; // Force assigned name if in room
+                if (inRoom) tempName = myName;
 
                 const input = document.getElementById('chat-input');
                 const msg = input.value.trim();
                 
                 if (msg) {
                     if (inRoom && connection && connection.open) {
-                        // Send Private Message
                         connection.send({ type: 'chat', msg: msg, sender: tempName });
                         addMessageToUI(tempName, msg, true);
-                    } else if (!inRoom) {
-                        // Save to Global Local Storage
-                        const newGlobalMsg = { sender: tempName, msg: msg, mine: true };
+                    } else if (inRoom) {
+                        addMessageToUI(tempName, msg, true);
+                        appendSystemMessage("Waiting for opponent to connect to see this message...");
+                    } else {
+                        const newGlobalMsg = { sender: tempName, msg: msg, isMine: true };
                         globalChat.push(newGlobalMsg);
-                        localStorage.setItem('karanGlobalChat', JSON.stringify(globalChat));
+                        try {
+                            localStorage.setItem('karanGlobalChat', JSON.stringify(globalChat));
+                        } catch (e) {}
                         addMessageToUI(tempName, msg, true);
                     }
                     input.value = '';
@@ -567,7 +593,7 @@
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
 
-        function appendSystemMessage(msg, isRoomSysMsg = false) {
+        function appendSystemMessage(msg) {
             const div = document.createElement('div');
             div.style.textAlign = 'center';
             div.style.fontSize = '12px';
@@ -580,7 +606,7 @@
         }
 
         function renderChat() {
-            chatMessages.innerHTML = ""; // Clear current view
+            chatMessages.innerHTML = "";
             const activeChat = inRoom ? roomChat : globalChat;
             
             if (!inRoom) {
@@ -590,13 +616,17 @@
             }
 
             activeChat.forEach(c => {
-                addMessageToUI(c.sender, c.msg, c.mine || c.isMine);
+                addMessageToUI(c.sender, c.msg, c.isMine);
             });
         }
 
         // --- TIC TAC TOE LOGIC ---
         
         function makeMove(index) {
+            if (!inRoom || !connection || !connection.open) {
+                alert("Wait for an opponent to join before playing!");
+                return;
+            }
             if (!gameActive || board[index] !== "" || currentTurn !== mySymbol) return;
             
             updateBoard(index, mySymbol);
@@ -619,6 +649,10 @@
         }
 
         function updateTurnIndicator() {
+            if (!connection || !connection.open) {
+                turnIndicator.innerText = "WAITING FOR OPPONENT...";
+                return;
+            }
             if (currentTurn === mySymbol) {
                 turnIndicator.innerText = `YOUR TURN :- ${mySymbol}`;
             } else {
@@ -659,6 +693,8 @@
             if (connection && connection.open) {
                 connection.send({ type: 'new-game' });
                 resetBoard();
+            } else {
+                resetBoard();
             }
         }
 
@@ -670,7 +706,7 @@
                 cell.innerText = "";
                 cell.className = "cell";
             });
-            if(inRoom) updateTurnIndicator();
+            if (inRoom) updateTurnIndicator();
         }
     </script>
 </body>
