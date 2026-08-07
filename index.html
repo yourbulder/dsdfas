@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat & Tic-Tac-Toe</title>
+    <!-- Importing PeerJS for online peer-to-peer connections -->
+    <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.5/dist/peerjs.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            gap: 20px;
+        }
+
+        /* --- LEFT PANEL (CHAT) --- */
+        .chat-panel {
+            width: 320px;
+            height: 600px;
+            background-color: #aae0aa;
+            border: 6px solid black;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .chat-header {
+            background-color: #2b8a3e;
+            border-bottom: 6px solid black;
+            padding: 10px;
+        }
+
+        .chat-header-text {
+            background-color: white;
+            border: 4px solid black;
+            border-radius: 15px;
+            padding: 2px 10px;
+            display: inline-block;
+            font-weight: bold;
+        }
+
+        .chat-messages {
+            flex-grow: 1;
+            padding: 15px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .msg-bubble {
+            background-color: white;
+            border: 4px solid black;
+            border-radius: 20px;
+            padding: 8px 15px;
+            max-width: 80%;
+            word-wrap: break-word;
+            font-weight: bold;
+        }
+
+        .my-msg {
+            align-self: flex-end;
+            border-bottom-right-radius: 5px;
+        }
+
+        .friend-msg {
+            align-self: flex-start;
+            border-top-left-radius: 5px;
+        }
+
+        .chat-input-area {
+            padding: 10px;
+            background-color: #aae0aa;
+            border-top: 6px solid black;
+        }
+
+        .chat-input-box {
+            display: flex;
+            background-color: white;
+            border: 4px solid black;
+            border-radius: 5px;
+            padding: 5px;
+        }
+
+        .chat-input-box input {
+            border: none;
+            outline: none;
+            flex-grow: 1;
+            font-weight: bold;
+        }
+
+        /* --- RIGHT PANEL (LOBBY & GAME) --- */
+        .right-panel {
+            width: 350px;
+            height: 600px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        /* LOBBY VIEW (karan.png) */
+        .lobby-view {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100%;
+        }
+
+        .login-box {
+            background-color: #72c472;
+            border: 6px solid black;
+            border-radius: 40px;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .input-line {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .input-line input {
+            background: transparent;
+            border: none;
+            border-bottom: 4px solid black;
+            outline: none;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+            width: 80%;
+        }
+        .input-line input::placeholder {
+            color: rgba(255,255,255,0.7);
+        }
+
+        .action-button {
+            background-color: #2b8a3e;
+            border: 6px solid black;
+            border-radius: 30px;
+            padding: 15px;
+            text-align: center;
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        .action-button:hover {
+            background-color: #1e692c;
+        }
+
+        /* GAME VIEW (KARAN 2.png) */
+        .game-view {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+            justify-content: space-between;
+        }
+
+        .game-board-container {
+            background-color: #4ade80;
+            border: 6px solid black;
+            border-radius: 40px;
+            padding: 20px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .game-header {
+            width: 100%;
+            color: white;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .game-header span {
+            border-bottom: 2px solid white;
+            display: inline-block;
+            min-width: 100px;
+        }
+
+        .turn-indicator {
+            font-weight: bold;
+            font-size: 20px;
+            margin: 15px 0;
+        }
+
+        .tic-tac-toe {
+            display: grid;
+            grid-template-columns: repeat(3, 80px);
+            grid-template-rows: repeat(3, 80px);
+            background-color: black;
+            gap: 4px;
+            border: 4px solid black;
+        }
+
+        .cell {
+            background-color: #4ade80;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 60px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .cell.x { color: red; }
+        .cell.o { color: #0ea5e9; } /* Blue */
+
+        .name-display {
+            background-color: #2b8a3e;
+            border: 6px solid black;
+            border-radius: 20px;
+            padding: 10px;
+            text-align: center;
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- LEFT PANEL: CHAT -->
+    <div class="chat-panel">
+        <div class="chat-header">
+            <div class="chat-header-text">chat</div>
+        </div>
+        <div class="chat-messages" id="chat-messages">
+            <!-- Messages will appear here -->
+        </div>
+        <div class="chat-input-area">
+            <div class="chat-input-box">
+                <span style="margin-right: 5px;">💬</span>
+                <input type="text" id="chat-input" placeholder="type msg" onkeypress="handleChatKeyPress(event)">
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT PANEL: LOBBY & GAME -->
+    <div class="right-panel">
+        
+        <!-- LOBBY STATE (karan.png) -->
+        <div class="lobby-view" id="lobby-view">
+            <div class="login-box">
+                <div class="input-line">
+                    <input type="text" id="room-name" placeholder="room name">
+                </div>
+                <div class="input-line">
+                    <input type="password" id="room-pass" placeholder="room pass">
+                </div>
+                <div class="action-button" onclick="createRoom()">CREATE ROOM</div>
+                <div class="action-button" onclick="joinRoom()">JOIN ROOM</div>
+            </div>
+            
+            <div>
+                <div class="input-line" style="background-color: #2b8a3e; border: 6px solid black; border-radius: 30px; padding: 15px;">
+                    <input type="text" id="your-name" placeholder="your name">
+                </div>
+            </div>
+        </div>
+
+        <!-- GAME STATE (KARAN 2.png) -->
+        <div class="game-view" id="game-view">
+            <div class="game-board-container">
+                <div class="game-header">
+                    ROOM ID :- <span id="display-room-id"></span><br>
+                    pass :- <span id="display-room-pass"></span>
+                </div>
+                
+                <div class="turn-indicator" id="turn-indicator">YOUR TURN :- X</div>
+                
+                <div class="tic-tac-toe" id="board">
+                    <div class="cell" onclick="makeMove(0)"></div>
+                    <div class="cell" onclick="makeMove(1)"></div>
+                    <div class="cell" onclick="makeMove(2)"></div>
+                    <div class="cell" onclick="makeMove(3)"></div>
+                    <div class="cell" onclick="makeMove(4)"></div>
+                    <div class="cell" onclick="makeMove(5)"></div>
+                    <div class="cell" onclick="makeMove(6)"></div>
+                    <div class="cell" onclick="makeMove(7)"></div>
+                    <div class="cell" onclick="makeMove(8)"></div>
+                </div>
+            </div>
+            
+            <div class="action-button" onclick="requestNewGame()" style="margin-top: 10px;">NEW GAME</div>
+            <div class="name-display" id="display-name" style="margin-top: 10px;">your name</div>
+        </div>
+    </div>
+
+    <script>
+        let peer;
+        let connection;
+        let myName = "Player";
+        let isHost = false;
+        
+        // Game State
+        let board = ["", "", "", "", "", "", "", "", ""];
+        let mySymbol = "X";
+        let currentTurn = "X";
+        let gameActive = true;
+
+        // UI Elements
+        const lobbyView = document.getElementById('lobby-view');
+        const gameView = document.getElementById('game-view');
+        const chatMessages = document.getElementById('chat-messages');
+        const cells = document.querySelectorAll('.cell');
+        const turnIndicator = document.getElementById('turn-indicator');
+
+        // Initialize Peer connection
+        function initPeer(id, isCreating) {
+            // We use the room name + pass as a unique hash for the PeerJS ID
+            peer = new Peer(id); 
+
+            peer.on('open', (id) => {
+                console.log('My peer ID is: ' + id);
+                if (isCreating) {
+                    appendSystemMessage("Room created. Waiting for friend to join...");
+                }
+            });
+
+            peer.on('connection', (conn) => {
+                connection = conn;
+                setupConnectionListeners();
+                switchToGameView();
+                appendSystemMessage("Friend joined the room!");
+            });
+
+            peer.on('error', (err) => {
+                alert("Connection Error: " + err.type);
+            });
+        }
+
+        function createRoom() {
+            const roomName = document.getElementById('room-name').value;
+            const roomPass = document.getElementById('room-pass').value;
+            myName = document.getElementById('your-name').value || "Host";
+            
+            if(!roomName || !roomPass) return alert("Enter room name and password!");
+            
+            isHost = true;
+            mySymbol = "X"; // Host is always X
+            const roomId = `karan-game-${roomName}-${roomPass}`;
+            initPeer(roomId, true);
+            
+            document.getElementById('display-room-id').innerText = roomName;
+            document.getElementById('display-room-pass').innerText = roomPass;
+        }
+
+        function joinRoom() {
+            const roomName = document.getElementById('room-name').value;
+            const roomPass = document.getElementById('room-pass').value;
+            myName = document.getElementById('your-name').value || "Friend";
+
+            if(!roomName || !roomPass) return alert("Enter room name and password!");
+
+            isHost = false;
+            mySymbol = "O"; // Joiner is always O
+            const roomId = `karan-game-${roomName}-${roomPass}`;
+            
+            peer = new Peer(); // Random ID for the joiner
+            peer.on('open', () => {
+                connection = peer.connect(roomId);
+                connection.on('open', () => {
+                    setupConnectionListeners();
+                    switchToGameView();
+                    appendSystemMessage("Joined the room successfully!");
+                    document.getElementById('display-room-id').innerText = roomName;
+                    document.getElementById('display-room-pass').innerText = roomPass;
+                });
+            });
+        }
+
+        function setupConnectionListeners() {
+            connection.on('data', (data) => {
+                if (data.type === 'chat') {
+                    appendMessage(data.msg, 'friend-msg');
+                } else if (data.type === 'move') {
+                    receiveMove(data.index, data.symbol);
+                } else if (data.type === 'new-game') {
+                    resetBoard();
+                    appendSystemMessage("Friend started a new game!");
+                }
+            });
+        }
+
+        function switchToGameView() {
+            lobbyView.style.display = 'none';
+            gameView.style.display = 'flex';
+            document.getElementById('display-name').innerText = myName;
+            updateTurnIndicator();
+        }
+
+        // --- CHAT LOGIC ---
+        function handleChatKeyPress(event) {
+            if (event.key === 'Enter') {
+                const input = document.getElementById('chat-input');
+                const msg = input.value.trim();
+                if (msg && connection && connection.open) {
+                    connection.send({ type: 'chat', msg: msg });
+                    appendMessage(msg, 'my-msg');
+                    input.value = '';
+                } else if (!connection || !connection.open) {
+                    alert("Not connected to anyone yet!");
+                }
+            }
+        }
+
+        function appendMessage(msg, className) {
+            const div = document.createElement('div');
+            div.className = `msg-bubble ${className}`;
+            div.innerText = msg;
+            chatMessages.appendChild(div);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function appendSystemMessage(msg) {
+            const div = document.createElement('div');
+            div.style.textAlign = 'center';
+            div.style.fontSize = '12px';
+            div.style.color = 'gray';
+            div.style.margin = '5px 0';
+            div.innerText = msg;
+            chatMessages.appendChild(div);
+        }
+
+        // --- TIC TAC TOE LOGIC ---
+        function makeMove(index) {
+            if (!gameActive || board[index] !== "" || currentTurn !== mySymbol) return;
+            
+            updateBoard(index, mySymbol);
+            connection.send({ type: 'move', index: index, symbol: mySymbol });
+            checkWinner();
+        }
+
+        function receiveMove(index, symbol) {
+            updateBoard(index, symbol);
+            checkWinner();
+        }
+
+        function updateBoard(index, symbol) {
+            board[index] = symbol;
+            const cellElement = cells[index];
+            cellElement.innerText = symbol;
+            cellElement.classList.add(symbol.toLowerCase());
+            currentTurn = currentTurn === "X" ? "O" : "X";
+            updateTurnIndicator();
+        }
+
+        function updateTurnIndicator() {
+            if (currentTurn === mySymbol) {
+                turnIndicator.innerText = `YOUR TURN :- ${mySymbol}`;
+            } else {
+                turnIndicator.innerText = `OPPONENT'S TURN :- ${currentTurn}`;
+            }
+        }
+
+        function checkWinner() {
+            const winConditions = [
+                [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
+                [0, 3, 6], [1, 4, 7], [2, 5, 8], // Cols
+                [0, 4, 8], [2, 4, 6]             // Diags
+            ];
+
+            let roundWon = false;
+            for (let i = 0; i < winConditions.length; i++) {
+                const [a, b, c] = winConditions[i];
+                if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+                    roundWon = true;
+                    break;
+                }
+            }
+
+            if (roundWon) {
+                const winner = currentTurn === "X" ? "O" : "X";
+                turnIndicator.innerText = winner === mySymbol ? "YOU WON! 🎉" : "YOU LOST! 😢";
+                gameActive = false;
+                return;
+            }
+
+            if (!board.includes("")) {
+                turnIndicator.innerText = "IT'S A DRAW!";
+                gameActive = false;
+            }
+        }
+
+        function requestNewGame() {
+            if (connection && connection.open) {
+                connection.send({ type: 'new-game' });
+                resetBoard();
+            }
+        }
+
+        function resetBoard() {
+            board = ["", "", "", "", "", "", "", "", ""];
+            gameActive = true;
+            currentTurn = "X";
+            cells.forEach(cell => {
+                cell.innerText = "";
+                cell.className = "cell";
+            });
+            updateTurnIndicator();
+        }
+    </script>
+</body>
+</html>
