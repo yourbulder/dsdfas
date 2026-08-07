@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat & Tic-Tac-Toe</title>
-    <!-- Importing PeerJS for online peer-to-peer connections -->
+    <title>Chat & Tic-Tac-Toe Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.5/dist/peerjs.min.js"></script>
     <style>
         * {
@@ -38,6 +37,9 @@
             background-color: #2b8a3e;
             border-bottom: 6px solid black;
             padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         .chat-header-text {
@@ -45,8 +47,17 @@
             border: 4px solid black;
             border-radius: 15px;
             padding: 2px 10px;
-            display: inline-block;
             font-weight: bold;
+        }
+        
+        .chat-mode-badge {
+            font-size: 12px;
+            color: white;
+            font-weight: bold;
+            background-color: #1e692c;
+            padding: 4px 8px;
+            border-radius: 10px;
+            border: 2px solid black;
         }
 
         .chat-messages {
@@ -58,23 +69,45 @@
             gap: 15px;
         }
 
+        .msg-container {
+            display: flex;
+            flex-direction: column;
+            max-width: 80%;
+        }
+
+        .msg-container.mine {
+            align-self: flex-end;
+            align-items: flex-end;
+        }
+
+        .msg-container.theirs {
+            align-self: flex-start;
+            align-items: flex-start;
+        }
+
+        .msg-name {
+            font-size: 11px;
+            font-weight: bold;
+            color: #1e692c;
+            margin-bottom: 2px;
+            padding: 0 5px;
+        }
+
         .msg-bubble {
             background-color: white;
             border: 4px solid black;
             border-radius: 20px;
             padding: 8px 15px;
-            max-width: 80%;
             word-wrap: break-word;
             font-weight: bold;
         }
 
-        .my-msg {
-            align-self: flex-end;
+        .msg-container.mine .msg-bubble {
             border-bottom-right-radius: 5px;
+            background-color: #dcf8c6;
         }
 
-        .friend-msg {
-            align-self: flex-start;
+        .msg-container.theirs .msg-bubble {
             border-top-left-radius: 5px;
         }
 
@@ -108,7 +141,6 @@
             justify-content: space-between;
         }
 
-        /* LOBBY VIEW (karan.png) */
         .lobby-view {
             display: flex;
             flex-direction: column;
@@ -143,9 +175,7 @@
             color: white;
             width: 80%;
         }
-        .input-line input::placeholder {
-            color: rgba(255,255,255,0.7);
-        }
+        .input-line input::placeholder { color: rgba(255,255,255,0.7); }
 
         .action-button {
             background-color: #2b8a3e;
@@ -157,14 +187,12 @@
             font-weight: bold;
             font-size: 18px;
             cursor: pointer;
-            margin-top: 20px;
+            margin-top: 10px;
         }
+        .action-button:hover { background-color: #1e692c; }
+        .btn-quit { background-color: #dc2626; margin-top: 5px;}
+        .btn-quit:hover { background-color: #991b1b; }
 
-        .action-button:hover {
-            background-color: #1e692c;
-        }
-
-        /* GAME VIEW (KARAN 2.png) */
         .game-view {
             display: none;
             flex-direction: column;
@@ -189,7 +217,6 @@
             font-weight: bold;
             margin-bottom: 10px;
         }
-        
         .game-header span {
             border-bottom: 2px solid white;
             display: inline-block;
@@ -221,7 +248,7 @@
             cursor: pointer;
         }
         .cell.x { color: red; }
-        .cell.o { color: #0ea5e9; } /* Blue */
+        .cell.o { color: #0ea5e9; }
 
         .name-display {
             background-color: #2b8a3e;
@@ -232,6 +259,16 @@
             color: white;
             font-weight: bold;
             font-size: 18px;
+            margin-top: 5px;
+        }
+
+        /* --- MOBILE RESPONSIVENESS --- */
+        @media (max-width: 750px) {
+            body {
+                flex-direction: column;
+                height: auto;
+                padding: 20px 0;
+            }
         }
     </style>
 </head>
@@ -241,9 +278,10 @@
     <div class="chat-panel">
         <div class="chat-header">
             <div class="chat-header-text">chat</div>
+            <div class="chat-mode-badge" id="chat-mode-badge">GLOBAL</div>
         </div>
         <div class="chat-messages" id="chat-messages">
-            <!-- Messages will appear here -->
+            <!-- Messages render here -->
         </div>
         <div class="chat-input-area">
             <div class="chat-input-box">
@@ -256,7 +294,7 @@
     <!-- RIGHT PANEL: LOBBY & GAME -->
     <div class="right-panel">
         
-        <!-- LOBBY STATE (karan.png) -->
+        <!-- LOBBY STATE -->
         <div class="lobby-view" id="lobby-view">
             <div class="login-box">
                 <div class="input-line">
@@ -271,12 +309,12 @@
             
             <div>
                 <div class="input-line" style="background-color: #2b8a3e; border: 6px solid black; border-radius: 30px; padding: 15px;">
-                    <input type="text" id="your-name" placeholder="your name">
+                    <input type="text" id="your-name" placeholder="your name (required)">
                 </div>
             </div>
         </div>
 
-        <!-- GAME STATE (KARAN 2.png) -->
+        <!-- GAME STATE -->
         <div class="game-view" id="game-view">
             <div class="game-board-container">
                 <div class="game-header">
@@ -299,16 +337,19 @@
                 </div>
             </div>
             
-            <div class="action-button" onclick="requestNewGame()" style="margin-top: 10px;">NEW GAME</div>
-            <div class="name-display" id="display-name" style="margin-top: 10px;">your name</div>
+            <div class="action-button" onclick="requestNewGame()">NEW GAME</div>
+            <div class="action-button btn-quit" onclick="quitRoom()">QUIT ROOM</div>
+            <div class="name-display" id="display-name">your name</div>
         </div>
     </div>
 
     <script>
-        let peer;
-        let connection;
+        let peer = null;
+        let connection = null;
         let myName = "Player";
+        let friendName = "Friend";
         let isHost = false;
+        let inRoom = false;
         
         // Game State
         let board = ["", "", "", "", "", "", "", "", ""];
@@ -316,131 +357,245 @@
         let currentTurn = "X";
         let gameActive = true;
 
+        // Chat States
+        let globalChat = JSON.parse(localStorage.getItem('karanGlobalChat')) || [];
+        let roomChat = [];
+
         // UI Elements
         const lobbyView = document.getElementById('lobby-view');
         const gameView = document.getElementById('game-view');
         const chatMessages = document.getElementById('chat-messages');
         const cells = document.querySelectorAll('.cell');
         const turnIndicator = document.getElementById('turn-indicator');
+        const chatModeBadge = document.getElementById('chat-mode-badge');
+        const nameInput = document.getElementById('your-name');
 
-        // Initialize Peer connection
-        function initPeer(id, isCreating) {
-            // We use the room name + pass as a unique hash for the PeerJS ID
-            peer = new Peer(id); 
+        // Initialize Global Chat on load
+        window.onload = () => {
+            renderChat();
+        };
 
+        // --- ROOM & PEER CONNECTION LOGIC ---
+        
+        function getRoomId() {
+            const rn = document.getElementById('room-name').value;
+            const rp = document.getElementById('room-pass').value;
+            return `karan-game-${rn}-${rp}`;
+        }
+
+        function validateSetup() {
+            myName = nameInput.value.trim();
+            if (!myName) {
+                alert("Please enter 'your name' at the bottom first!");
+                return false;
+            }
+            if (!document.getElementById('room-name').value || !document.getElementById('room-pass').value) {
+                alert("Enter room name and password!");
+                return false;
+            }
+            return true;
+        }
+
+        function createRoom() {
+            if(!validateSetup()) return;
+            
+            isHost = true;
+            mySymbol = "X";
+            const roomId = getRoomId();
+            
+            peer = new Peer(roomId); 
             peer.on('open', (id) => {
-                console.log('My peer ID is: ' + id);
-                if (isCreating) {
-                    appendSystemMessage("Room created. Waiting for friend to join...");
-                }
+                switchToGameView();
+                appendSystemMessage("Room created. Waiting for someone to join...", true);
             });
 
             peer.on('connection', (conn) => {
                 connection = conn;
                 setupConnectionListeners();
-                switchToGameView();
-                appendSystemMessage("Friend joined the room!");
             });
 
-            peer.on('error', (err) => {
-                alert("Connection Error: " + err.type);
-            });
-        }
-
-        function createRoom() {
-            const roomName = document.getElementById('room-name').value;
-            const roomPass = document.getElementById('room-pass').value;
-            myName = document.getElementById('your-name').value || "Host";
-            
-            if(!roomName || !roomPass) return alert("Enter room name and password!");
-            
-            isHost = true;
-            mySymbol = "X"; // Host is always X
-            const roomId = `karan-game-${roomName}-${roomPass}`;
-            initPeer(roomId, true);
-            
-            document.getElementById('display-room-id').innerText = roomName;
-            document.getElementById('display-room-pass').innerText = roomPass;
+            peer.on('error', (err) => { alert("Error: " + err.type); });
         }
 
         function joinRoom() {
-            const roomName = document.getElementById('room-name').value;
-            const roomPass = document.getElementById('room-pass').value;
-            myName = document.getElementById('your-name').value || "Friend";
-
-            if(!roomName || !roomPass) return alert("Enter room name and password!");
+            if(!validateSetup()) return;
 
             isHost = false;
-            mySymbol = "O"; // Joiner is always O
-            const roomId = `karan-game-${roomName}-${roomPass}`;
+            mySymbol = "O";
+            const roomId = getRoomId();
             
-            peer = new Peer(); // Random ID for the joiner
+            peer = new Peer(); 
             peer.on('open', () => {
                 connection = peer.connect(roomId);
                 connection.on('open', () => {
                     setupConnectionListeners();
-                    switchToGameView();
-                    appendSystemMessage("Joined the room successfully!");
-                    document.getElementById('display-room-id').innerText = roomName;
-                    document.getElementById('display-room-pass').innerText = roomPass;
+                    // Send Handshake to check for duplicate names
+                    connection.send({ type: 'handshake', name: myName });
                 });
             });
+            peer.on('error', (err) => { alert("Error connecting to room!"); });
         }
 
         function setupConnectionListeners() {
             connection.on('data', (data) => {
-                if (data.type === 'chat') {
-                    appendMessage(data.msg, 'friend-msg');
-                } else if (data.type === 'move') {
-                    receiveMove(data.index, data.symbol);
-                } else if (data.type === 'new-game') {
-                    resetBoard();
-                    appendSystemMessage("Friend started a new game!");
+                // Handshake Logic for Unique Names
+                if (data.type === 'handshake') {
+                    friendName = data.name;
+                    if (friendName === myName) {
+                        // Name is taken! Give them a unique number
+                        friendName = myName + "_" + Math.floor(Math.random() * 1000);
+                    }
+                    // Reply to joiner
+                    connection.send({ type: 'handshake-reply', approvedName: friendName, hostName: myName });
+                    finalizeRoomJoin();
+                } 
+                else if (data.type === 'handshake-reply') {
+                    myName = data.approvedName;
+                    friendName = data.hostName;
+                    document.getElementById('display-name').innerText = myName;
+                    nameInput.value = myName; // update their input box
+                    finalizeRoomJoin();
                 }
+                // Chat & Game Logic
+                else if (data.type === 'chat') {
+                    addMessageToUI(data.sender, data.msg, false);
+                } 
+                else if (data.type === 'move') {
+                    receiveMove(data.index, data.symbol);
+                } 
+                else if (data.type === 'new-game') {
+                    resetBoard();
+                    appendSystemMessage(`${friendName} started a new game!`, true);
+                }
+            });
+
+            connection.on('close', () => {
+                alert("The other player left the room.");
+                quitRoom(false); // false means don't try to send a close event again
             });
         }
 
+        function finalizeRoomJoin() {
+            switchToGameView();
+            appendSystemMessage(`${friendName} joined the room!`, true);
+        }
+
+        // --- UI SWITCHING & QUIT LOGIC ---
+
         function switchToGameView() {
+            inRoom = true;
             lobbyView.style.display = 'none';
             gameView.style.display = 'flex';
             document.getElementById('display-name').innerText = myName;
+            document.getElementById('display-room-id').innerText = document.getElementById('room-name').value;
+            document.getElementById('display-room-pass').innerText = document.getElementById('room-pass').value;
+            
+            chatModeBadge.innerText = "PRIVATE ROOM";
+            chatModeBadge.style.backgroundColor = "#dc2626"; // Red to show private
+            roomChat = []; // Clear private chat history for new room
+            renderChat();
             updateTurnIndicator();
         }
 
+        function quitRoom(triggerClose = true) {
+            inRoom = false;
+            
+            // Disconnect PeerJS safely
+            if (triggerClose && connection) connection.close();
+            if (peer) {
+                peer.destroy();
+                peer = null;
+            }
+
+            // Reset UI
+            lobbyView.style.display = 'flex';
+            gameView.style.display = 'none';
+            chatModeBadge.innerText = "GLOBAL";
+            chatModeBadge.style.backgroundColor = "#1e692c";
+            
+            resetBoard();
+            renderChat(); // Reloads Global Chat
+        }
+
         // --- CHAT LOGIC ---
+
         function handleChatKeyPress(event) {
             if (event.key === 'Enter') {
+                let tempName = nameInput.value.trim() || "Anonymous";
+                if (inRoom) tempName = myName; // Force assigned name if in room
+
                 const input = document.getElementById('chat-input');
                 const msg = input.value.trim();
-                if (msg && connection && connection.open) {
-                    connection.send({ type: 'chat', msg: msg });
-                    appendMessage(msg, 'my-msg');
+                
+                if (msg) {
+                    if (inRoom && connection && connection.open) {
+                        // Send Private Message
+                        connection.send({ type: 'chat', msg: msg, sender: tempName });
+                        addMessageToUI(tempName, msg, true);
+                    } else if (!inRoom) {
+                        // Save to Global Local Storage
+                        const newGlobalMsg = { sender: tempName, msg: msg, mine: true };
+                        globalChat.push(newGlobalMsg);
+                        localStorage.setItem('karanGlobalChat', JSON.stringify(globalChat));
+                        addMessageToUI(tempName, msg, true);
+                    }
                     input.value = '';
-                } else if (!connection || !connection.open) {
-                    alert("Not connected to anyone yet!");
                 }
             }
         }
 
-        function appendMessage(msg, className) {
-            const div = document.createElement('div');
-            div.className = `msg-bubble ${className}`;
-            div.innerText = msg;
-            chatMessages.appendChild(div);
+        function addMessageToUI(sender, msg, isMine) {
+            if (inRoom) {
+                roomChat.push({ sender, msg, isMine });
+            }
+            
+            const container = document.createElement('div');
+            container.className = `msg-container ${isMine ? 'mine' : 'theirs'}`;
+            
+            const nameDiv = document.createElement('div');
+            nameDiv.className = 'msg-name';
+            nameDiv.innerText = sender;
+            
+            const bubbleDiv = document.createElement('div');
+            bubbleDiv.className = 'msg-bubble';
+            bubbleDiv.innerText = msg;
+            
+            container.appendChild(nameDiv);
+            container.appendChild(bubbleDiv);
+            
+            chatMessages.appendChild(container);
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
 
-        function appendSystemMessage(msg) {
+        function appendSystemMessage(msg, isRoomSysMsg = false) {
             const div = document.createElement('div');
             div.style.textAlign = 'center';
             div.style.fontSize = '12px';
             div.style.color = 'gray';
             div.style.margin = '5px 0';
+            div.style.fontWeight = 'bold';
             div.innerText = msg;
             chatMessages.appendChild(div);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function renderChat() {
+            chatMessages.innerHTML = ""; // Clear current view
+            const activeChat = inRoom ? roomChat : globalChat;
+            
+            if (!inRoom) {
+                appendSystemMessage("--- GLOBAL CHAT (Saved Locally) ---");
+            } else {
+                appendSystemMessage("--- PRIVATE ROOM CHAT ---");
+            }
+
+            activeChat.forEach(c => {
+                addMessageToUI(c.sender, c.msg, c.mine || c.isMine);
+            });
         }
 
         // --- TIC TAC TOE LOGIC ---
+        
         function makeMove(index) {
             if (!gameActive || board[index] !== "" || currentTurn !== mySymbol) return;
             
@@ -467,15 +622,15 @@
             if (currentTurn === mySymbol) {
                 turnIndicator.innerText = `YOUR TURN :- ${mySymbol}`;
             } else {
-                turnIndicator.innerText = `OPPONENT'S TURN :- ${currentTurn}`;
+                turnIndicator.innerText = `${friendName}'S TURN :- ${currentTurn}`;
             }
         }
 
         function checkWinner() {
             const winConditions = [
-                [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
-                [0, 3, 6], [1, 4, 7], [2, 5, 8], // Cols
-                [0, 4, 8], [2, 4, 6]             // Diags
+                [0, 1, 2], [3, 4, 5], [6, 7, 8],
+                [0, 3, 6], [1, 4, 7], [2, 5, 8],
+                [0, 4, 8], [2, 4, 6]            
             ];
 
             let roundWon = false;
@@ -515,7 +670,7 @@
                 cell.innerText = "";
                 cell.className = "cell";
             });
-            updateTurnIndicator();
+            if(inRoom) updateTurnIndicator();
         }
     </script>
 </body>
