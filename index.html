@@ -4,7 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat & Tic-Tac-Toe Pro</title>
+    
+    <!-- PeerJS for Private Game Rooms -->
     <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.5/dist/peerjs.min.js"></script>
+    
+    <!-- Firebase for Global Chat Sync -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
     <style>
         * {
             box-sizing: border-box;
@@ -76,14 +83,18 @@
             max-width: 85%;
         }
 
+        /* RIGHT ALIGN FOR MY MESSAGES */
         .msg-container.mine {
             align-self: flex-end;
             align-items: flex-end;
+            margin-left: auto; 
         }
 
+        /* LEFT ALIGN FOR FRIEND MESSAGES */
         .msg-container.theirs {
             align-self: flex-start;
             align-items: flex-start;
+            margin-right: auto;
         }
 
         .msg-name {
@@ -110,6 +121,7 @@
 
         .msg-container.theirs .msg-bubble {
             border-top-left-radius: 5px;
+            background-color: white;
         }
 
         .chat-input-area {
@@ -124,6 +136,7 @@
             border: 4px solid black;
             border-radius: 5px;
             padding: 5px;
+            align-items: center;
         }
 
         .chat-input-box input {
@@ -131,6 +144,24 @@
             outline: none;
             flex-grow: 1;
             font-weight: bold;
+            width: 100%;
+        }
+
+        /* SEND BUTTON STYLING */
+        .send-btn {
+            background-color: #2b8a3e;
+            color: white;
+            border: 3px solid black;
+            border-radius: 5px;
+            padding: 4px 10px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-left: 5px;
+            font-size: 12px;
+        }
+
+        .send-btn:hover {
+            background-color: #1e692c;
         }
 
         /* --- RIGHT PANEL (LOBBY & GAME) --- */
@@ -289,6 +320,7 @@
             <div class="chat-input-box">
                 <span style="margin-right: 5px;">💬</span>
                 <input type="text" id="chat-input" placeholder="type msg" onkeypress="handleChatKeyPress(event)">
+                <button class="send-btn" onclick="sendMessage()">SEND</button>
             </div>
         </div>
     </div>
@@ -346,6 +378,27 @@
     </div>
 
     <script>
+        // ==========================================
+        // ⚠️ FIREBASE SETUP WITH YOUR KEYS ⚠️
+        // ==========================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyDaFggwGKQJswcouN6l4LCTV6uapi4ivaQ",
+            authDomain: "whatshapp-94037.firebaseapp.com",
+            databaseURL: "https://whatshapp-94037-default-rtdb.firebaseio.com", 
+            projectId: "whatshapp-94037",
+            storageBucket: "whatshapp-94037.firebasestorage.app",
+            messagingSenderId: "882905744267",
+            appId: "1:882905744267:web:6118488a9d8170120ce58e",
+            measurementId: "G-KM4RT7161E"
+        };
+
+        // Initialize Firebase Database
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.database();
+
+        // App Variables
         let peer = null;
         let connection = null;
         let myName = "Player";
@@ -361,11 +414,6 @@
 
         // Chat Storage
         let globalChat = [];
-        try {
-            globalChat = JSON.parse(localStorage.getItem('karanGlobalChat')) || [];
-        } catch (e) {
-            globalChat = [];
-        }
         let roomChat = [];
 
         // UI Elements
@@ -378,10 +426,32 @@
         const nameInput = document.getElementById('your-name');
 
         window.onload = () => {
-            renderChat();
+            // Restore name from local device storage so they don't have to re-type it
+            const savedName = localStorage.getItem('karanUsername');
+            if (savedName) {
+                nameInput.value = savedName;
+                myName = savedName;
+            }
+            renderChat(); // Renders the initial chat header
         };
 
-        // --- SANITIZE ROOM ID FOR PEERJS ---
+        // 🟢 LISTEN TO FIREBASE REALTIME DATABASE 🟢
+        db.ref("global_chat").on("child_added", (snapshot) => {
+            const data = snapshot.val();
+            const currentName = nameInput.value.trim();
+            
+            // Check if this message was sent by the current user (for green styling)
+            const isMine = (data.sender === currentName && currentName !== "");
+            
+            // Store it in the local globalChat array
+            globalChat.push({ sender: data.sender, msg: data.msg, isMine: isMine });
+            
+            // Render immediately if we are currently looking at the Global Chat
+            if (!inRoom) {
+                addMessageToUI(data.sender, data.msg, isMine);
+            }
+        });
+
         function getSanitizedRoomId() {
             const rn = document.getElementById('room-name').value.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
             const rp = document.getElementById('room-pass').value.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -394,6 +464,7 @@
                 alert("Please enter 'your name' at the bottom first!");
                 return false;
             }
+            localStorage.setItem('karanUsername', myName); // Save for next time
             if (!document.getElementById('room-name').value.trim() || !document.getElementById('room-pass').value.trim()) {
                 alert("Enter room name and password!");
                 return false;
@@ -434,7 +505,7 @@
 
             peer.on('error', (err) => { 
                 if (err.type === 'unavailable-id') {
-                    alert("This Room Name & Password combo is currently active. Try joining instead or pick another name!");
+                    alert("This Room Name & Password combo is currently active. Try joining instead!");
                 } else {
                     alert("Room Error: " + err.type); 
                 }
@@ -484,7 +555,7 @@
                     finalizeRoomJoin();
                 }
                 else if (data.type === 'chat') {
-                    addMessageToUI(data.sender, data.msg, false);
+                    addMessageToUI(data.sender, data.msg, false); // Friend msg
                 } 
                 else if (data.type === 'move') {
                     receiveMove(data.index, data.symbol);
@@ -506,8 +577,6 @@
             appendSystemMessage(`${friendName} joined the room!`);
             resetBoard();
         }
-
-        // --- UI SWITCHING & QUIT LOGIC ---
 
         function switchToGameView() {
             inRoom = true;
@@ -537,36 +606,49 @@
             chatModeBadge.style.backgroundColor = "#1e692c";
             
             resetBoard();
-            renderChat();
+            renderChat(); // Re-render Firebase global chat history
         }
 
         // --- CHAT LOGIC ---
 
         function handleChatKeyPress(event) {
             if (event.key === 'Enter') {
-                let tempName = nameInput.value.trim() || "Anonymous";
-                if (inRoom) tempName = myName;
+                sendMessage();
+            }
+        }
 
-                const input = document.getElementById('chat-input');
-                const msg = input.value.trim();
-                
-                if (msg) {
-                    if (inRoom && connection && connection.open) {
-                        connection.send({ type: 'chat', msg: msg, sender: tempName });
-                        addMessageToUI(tempName, msg, true);
-                    } else if (inRoom) {
-                        addMessageToUI(tempName, msg, true);
-                        appendSystemMessage("Waiting for opponent to connect to see this message...");
-                    } else {
-                        const newGlobalMsg = { sender: tempName, msg: msg, isMine: true };
-                        globalChat.push(newGlobalMsg);
-                        try {
-                            localStorage.setItem('karanGlobalChat', JSON.stringify(globalChat));
-                        } catch (e) {}
-                        addMessageToUI(tempName, msg, true);
-                    }
-                    input.value = '';
+        function sendMessage() {
+            let tempName = nameInput.value.trim();
+            
+            if (!tempName) {
+                alert("Bro, you must enter 'your name' at the bottom right before sending a message!");
+                return; 
+            }
+
+            localStorage.setItem('karanUsername', tempName); // Update local save
+            if (inRoom) tempName = myName;
+
+            const input = document.getElementById('chat-input');
+            const msg = input.value.trim();
+            
+            if (msg) {
+                if (inRoom && connection && connection.open) {
+                    // Send Private PeerJS Message
+                    connection.send({ type: 'chat', msg: msg, sender: tempName });
+                    addMessageToUI(tempName, msg, true);
+                } else if (inRoom) {
+                    addMessageToUI(tempName, msg, true);
+                    appendSystemMessage("Waiting for opponent to connect to see this message...");
+                } else {
+                    // 🚀 PUSH TO FIREBASE INSTEAD OF LOCALSTORAGE
+                    db.ref("global_chat").push({
+                        sender: tempName,
+                        msg: msg,
+                        timestamp: firebase.database.ServerValue.TIMESTAMP
+                    });
+                    // Note: We don't call addMessageToUI() here because the 'child_added' listener does it for us instantly!
                 }
+                input.value = '';
             }
         }
 
@@ -610,7 +692,7 @@
             const activeChat = inRoom ? roomChat : globalChat;
             
             if (!inRoom) {
-                appendSystemMessage("--- GLOBAL CHAT (Saved Locally) ---");
+                appendSystemMessage("--- GLOBAL LIVE CHAT ---");
             } else {
                 appendSystemMessage("--- PRIVATE ROOM CHAT ---");
             }
