@@ -19,412 +19,521 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        body {
-            background-color: #f0f0f0;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            gap: 15px;
-            padding: 15px;
-        }
-
-        /* AD CONTAINERS */
-        .ad-container {
-            width: 100%;
-            max-width: 728px;
-            min-height: 90px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background-color: #e5e5e5;
-            border: 2px dashed #9ca3af;
-            border-radius: 10px;
-            overflow: hidden;
-            text-align: center;
-        }
-
-        .ad-placeholder-text {
-            color: #6b7280;
-            font-size: 12px;
-            font-weight: bold;
-        }
-
-        .main-app-wrapper {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 20px;
-            width: 100%;
-        }
-
-        /* --- LEFT PANEL (CHAT) --- */
-        .chat-panel {
-            width: 320px;
-            height: 600px;
-            background-color: #aae0aa;
-            border: 6px solid black;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-        }
-
-        .chat-header {
-            background-color: #2b8a3e;
-            border-bottom: 6px solid black;
-            padding: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .chat-header-text {
-            background-color: white;
-            border: 4px solid black;
-            border-radius: 15px;
-            padding: 2px 10px;
-            font-weight: bold;
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
         }
         
-        .chat-mode-badge {
-            font-size: 12px;
-            color: white;
-            font-weight: bold;
-            background-color: #1e692c;
-            padding: 4px 8px;
-            border-radius: 10px;
-            border: 2px solid black;
+        body { 
+            background-color: #f0f0f0; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh; 
+            gap: 15px; 
+            padding: 15px; 
+        }
+        
+        /* --- AD CONTAINERS --- */
+        .ad-container { 
+            width: 100%; 
+            max-width: 728px; 
+            min-height: 90px; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            background-color: #e5e5e5; 
+            border: 2px dashed #9ca3af; 
+            border-radius: 10px; 
+            overflow: hidden; 
+            text-align: center; 
+        }
+        
+        .ad-placeholder-text { 
+            color: #6b7280; 
+            font-size: 12px; 
+            font-weight: bold; 
+        }
+        
+        .main-app-wrapper { 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            gap: 20px; 
+            width: 100%; 
         }
 
-        .chat-messages {
-            flex-grow: 1;
-            padding: 15px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
+        /* --- CHAT PANEL (LEFT) --- */
+        .chat-panel { 
+            width: 320px; 
+            height: 600px; 
+            background-color: #aae0aa; 
+            border: 6px solid black; 
+            display: flex; 
+            flex-direction: column; 
+            position: relative; 
         }
-
-        .msg-container {
-            display: flex;
-            flex-direction: column;
-            max-width: 85%;
+        
+        .chat-header { 
+            background-color: #2b8a3e; 
+            border-bottom: 6px solid black; 
+            padding: 10px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
         }
-
-        .msg-container.mine {
-            align-self: flex-end;
-            align-items: flex-end;
+        
+        .chat-header-text { 
+            background-color: white; 
+            border: 4px solid black; 
+            border-radius: 15px; 
+            padding: 2px 10px; 
+            font-weight: bold; 
+        }
+        
+        .chat-mode-badge { 
+            font-size: 12px; 
+            color: white; 
+            font-weight: bold; 
+            background-color: #1e692c; 
+            padding: 4px 8px; 
+            border-radius: 10px; 
+            border: 2px solid black; 
+        }
+        
+        .chat-messages { 
+            flex-grow: 1; 
+            padding: 15px; 
+            overflow-y: auto; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 15px; 
+        }
+        
+        .msg-container { 
+            display: flex; 
+            flex-direction: column; 
+            max-width: 85%; 
+        }
+        
+        .msg-container.mine { 
+            align-self: flex-end; 
+            align-items: flex-end; 
             margin-left: auto; 
         }
-
-        .msg-container.theirs {
-            align-self: flex-start;
-            align-items: flex-start;
-            margin-right: auto;
-        }
-
-        .msg-name {
-            font-size: 11px;
-            font-weight: bold;
-            color: #1e692c;
-            margin-bottom: 2px;
-            padding: 0 5px;
-        }
-
-        .msg-bubble {
-            background-color: white;
-            border: 4px solid black;
-            border-radius: 20px;
-            padding: 8px 15px;
-            word-wrap: break-word;
-            font-weight: bold;
-        }
-
-        .msg-container.mine .msg-bubble {
-            border-bottom-right-radius: 5px;
-            background-color: #dcf8c6;
-        }
-
-        .msg-container.theirs .msg-bubble {
-            border-top-left-radius: 5px;
-            background-color: white;
-        }
-
-        .chat-input-area {
-            padding: 10px;
-            background-color: #aae0aa;
-            border-top: 6px solid black;
-        }
-
-        .chat-input-box {
-            display: flex;
-            background-color: white;
-            border: 4px solid black;
-            border-radius: 5px;
-            padding: 5px;
-            align-items: center;
-        }
-
-        .chat-input-box input {
-            border: none;
-            outline: none;
-            flex-grow: 1;
-            font-weight: bold;
-            width: 100%;
-        }
-
-        .send-btn {
-            background-color: #2b8a3e;
-            color: white;
-            border: 3px solid black;
-            border-radius: 5px;
-            padding: 4px 10px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-left: 5px;
-            font-size: 12px;
-        }
-        .send-btn:hover { background-color: #1e692c; }
-
-        /* --- RIGHT PANEL --- */
-        .right-panel {
-            width: 350px;
-            height: 600px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
-
-        .lobby-view {
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            height: 100%;
-        }
-
-        .login-box {
-            background-color: #72c472;
-            border: 6px solid black;
-            border-radius: 40px;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            overflow: hidden;
-        }
-
-        /* SLIDER TOGGLE */
-        .toggle-container {
-            display: flex;
-            background: #1e692c;
-            border: 4px solid black;
-            border-radius: 20px;
-            position: relative;
-            margin-bottom: 10px;
-        }
-        .toggle-btn {
-            flex: 1;
-            padding: 8px;
-            text-align: center;
-            font-weight: bold;
-            color: white;
-            cursor: pointer;
-            z-index: 2;
-            font-size: 14px;
-        }
-        .toggle-slider {
-            position: absolute;
-            top: 0; left: 0;
-            width: 50%;
-            height: 100%;
-            background: #4ade80;
-            border-radius: 15px;
-            transition: 0.3s ease;
-            z-index: 1;
-            border: 2px solid black;
-        }
-
-        .sliding-sections {
-            display: flex;
-            width: 200%;
-            transition: transform 0.4s ease-in-out;
-        }
-        .section {
-            width: 50%;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            padding: 0 5px;
-        }
-
-        .input-line {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 100%;
-        }
-
-        .input-line input, .input-line select {
-            background: transparent;
-            border: none;
-            border-bottom: 4px solid black;
-            outline: none;
-            text-align: center;
-            font-size: 18px;
-            font-weight: bold;
-            color: white;
-            width: 90%;
-            padding: 5px;
+        
+        .msg-container.theirs { 
+            align-self: flex-start; 
+            align-items: flex-start; 
+            margin-right: auto; 
         }
         
-        .input-line select {
-            background-color: #1e692c;
-            border: 4px solid black;
-            border-radius: 10px;
-            margin-bottom: 5px;
-            cursor: pointer;
-        }
-
-        .input-line input::placeholder { color: rgba(255,255,255,0.7); }
-
-        .action-button {
-            background-color: #2b8a3e;
-            border: 6px solid black;
-            border-radius: 20px;
-            padding: 10px;
-            text-align: center;
-            color: white;
-            font-weight: bold;
-            font-size: 16px;
-            cursor: pointer;
-        }
-        .action-button:hover { background-color: #1e692c; }
-        .btn-quit { background-color: #dc2626; margin-top: 5px;}
-        .btn-quit:hover { background-color: #991b1b; }
-
-        /* ACTIVE VIEWS */
-        .active-view {
-            display: none;
-            flex-direction: column;
-            height: 100%;
-            justify-content: space-between;
-        }
-
-        .board-container {
-            background-color: #4ade80;
-            border: 6px solid black;
-            border-radius: 30px;
-            padding: 15px;
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            overflow-y: auto;
-        }
-
-        .header-info {
-            width: 100%;
-            color: white;
-            font-weight: bold;
-            margin-bottom: 10px;
-            font-size: 14px;
-            text-align: center;
-            background: #1e692c;
-            border: 3px solid black;
-            padding: 5px;
-            border-radius: 10px;
+        .msg-name { 
+            font-size: 11px; 
+            font-weight: bold; 
+            color: #1e692c; 
+            margin-bottom: 2px; 
+            padding: 0 5px; 
         }
         
-        /* SCOREBOARD */
-        .scoreboard {
-            display: flex;
-            justify-content: space-between;
-            width: 100%;
-            background: white;
-            border: 4px solid black;
-            border-radius: 10px;
-            padding: 5px 15px;
-            font-weight: bold;
-            margin-bottom: 10px;
+        .msg-bubble { 
+            background-color: white; 
+            border: 4px solid black; 
+            border-radius: 20px; 
+            padding: 8px 15px; 
+            word-wrap: break-word; 
+            font-weight: bold; 
         }
-
-        .turn-indicator {
-            font-weight: bold;
-            font-size: 18px;
-            margin: 5px 0 10px 0;
-            text-align: center;
-        }
-
-        .tic-tac-toe {
-            display: grid;
-            grid-template-columns: repeat(3, 70px);
-            grid-template-rows: repeat(3, 70px);
-            background-color: black;
-            gap: 4px;
-            border: 4px solid black;
-        }
-
-        .cell {
-            background-color: #4ade80;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 50px;
-            font-weight: bold;
-            cursor: pointer;
-            user-select: none;
-        }
-        .cell.x { color: red; }
-        .cell.o { color: #0ea5e9; }
         
-        /* LUDO PLACEHOLDER */
-        .ludo-area {
-            background-color: white;
-            border: 4px solid black;
-            border-radius: 10px;
-            width: 100%;
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 10px;
+        .msg-container.mine .msg-bubble { 
+            border-bottom-right-radius: 5px; 
+            background-color: #dcf8c6; 
         }
-        .dice-display {
-            font-size: 60px;
-            margin: 10px 0;
+        
+        .msg-container.theirs .msg-bubble { 
+            border-top-left-radius: 5px; 
+            background-color: white; 
+        }
+        
+        .chat-input-area { 
+            padding: 10px; 
+            background-color: #aae0aa; 
+            border-top: 6px solid black; 
+        }
+        
+        .chat-input-box { 
+            display: flex; 
+            background-color: white; 
+            border: 4px solid black; 
+            border-radius: 5px; 
+            padding: 5px; 
+            align-items: center; 
+        }
+        
+        .chat-input-box input { 
+            border: none; 
+            outline: none; 
+            flex-grow: 1; 
+            font-weight: bold; 
+            width: 100%; 
+        }
+        
+        .send-btn { 
+            background-color: #2b8a3e; 
+            color: white; 
+            border: 3px solid black; 
+            border-radius: 5px; 
+            padding: 4px 10px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            margin-left: 5px; 
+            font-size: 12px; 
+        }
+        
+        .send-btn:hover { 
+            background-color: #1e692c; 
         }
 
-        /* ADMIN PANEL STUFF */
-        .admin-panel { display: none; width: 100%; margin-top: 10px; background: white; border: 4px solid black; border-radius: 10px; padding: 10px; }
-        .admin-panel h4 { text-align: center; margin-bottom: 8px; font-size: 14px; }
-        .admin-section-title { font-size: 11px; font-weight: bold; color: #1e692c; margin: 8px 0 4px 0; text-transform: uppercase; }
-        .member-list { display: flex; flex-direction: column; gap: 5px; max-height: 120px; overflow-y: auto; }
-        .member-item { display: flex; justify-content: space-between; align-items: center; background: #f0f0f0; padding: 5px; border: 2px solid black; border-radius: 5px; font-size: 12px; font-weight: bold; }
+        /* --- RIGHT PANEL & LOBBY --- */
+        .right-panel { 
+            width: 350px; 
+            height: 600px; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: space-between; 
+        }
+        
+        .lobby-view { 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: space-between; 
+            height: 100%; 
+        }
+        
+        .login-box { 
+            background-color: #72c472; 
+            border: 6px solid black; 
+            border-radius: 40px; 
+            padding: 20px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 15px; 
+            overflow: hidden; 
+        }
+        
+        .toggle-container { 
+            display: flex; 
+            background: #1e692c; 
+            border: 4px solid black; 
+            border-radius: 20px; 
+            position: relative; 
+            margin-bottom: 10px; 
+        }
+        
+        .toggle-btn { 
+            flex: 1; 
+            padding: 8px; 
+            text-align: center; 
+            font-weight: bold; 
+            color: white; 
+            cursor: pointer; 
+            z-index: 2; 
+            font-size: 14px; 
+        }
+        
+        .toggle-slider { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 50%; 
+            height: 100%; 
+            background: #4ade80; 
+            border-radius: 15px; 
+            transition: 0.3s ease; 
+            z-index: 1; 
+            border: 2px solid black; 
+        }
+        
+        .sliding-sections { 
+            display: flex; 
+            width: 200%; 
+            transition: transform 0.4s ease-in-out; 
+        }
+        
+        .section { 
+            width: 50%; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 15px; 
+            padding: 0 5px; 
+        }
 
-        .name-display {
-            background-color: #2b8a3e;
-            border: 6px solid black;
-            border-radius: 20px;
-            padding: 10px;
-            text-align: center;
-            color: white;
-            font-weight: bold;
-            font-size: 18px;
+        .input-line { 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            width: 100%; 
+        }
+        
+        .input-line input, .input-line select { 
+            background: transparent; 
+            border: none; 
+            border-bottom: 4px solid black; 
+            outline: none; 
+            text-align: center; 
+            font-size: 18px; 
+            font-weight: bold; 
+            color: white; 
+            width: 90%; 
+            padding: 5px; 
+        }
+        
+        .input-line select { 
+            background-color: #1e692c; 
+            border: 4px solid black; 
+            border-radius: 10px; 
+            margin-bottom: 5px; 
+            cursor: pointer; 
+        }
+        
+        .input-line input::placeholder { 
+            color: rgba(255,255,255,0.7); 
+        }
+
+        .action-button { 
+            background-color: #2b8a3e; 
+            border: 6px solid black; 
+            border-radius: 20px; 
+            padding: 10px; 
+            text-align: center; 
+            color: white; 
+            font-weight: bold; 
+            font-size: 16px; 
+            cursor: pointer; 
+        }
+        
+        .action-button:hover { 
+            background-color: #1e692c; 
+        }
+        
+        .btn-quit { 
+            background-color: #dc2626; 
             margin-top: 5px;
         }
+        
+        .btn-quit:hover { 
+            background-color: #991b1b; 
+        }
 
-        @media (max-width: 750px) {
-            .main-app-wrapper { flex-direction: column; }
-            .chat-panel, .right-panel { width: 100%; max-width: 350px; }
+        /* --- ACTIVE VIEWS & BOARDS --- */
+        .active-view { 
+            display: none; 
+            flex-direction: column; 
+            height: 100%; 
+            justify-content: space-between; 
+        }
+        
+        .board-container { 
+            background-color: #4ade80; 
+            border: 6px solid black; 
+            border-radius: 30px; 
+            padding: 15px; 
+            flex-grow: 1; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            overflow-y: auto; 
+        }
+        
+        .header-info { 
+            width: 100%; 
+            color: white; 
+            font-weight: bold; 
+            margin-bottom: 10px; 
+            font-size: 14px; 
+            text-align: center; 
+            background: #1e692c; 
+            border: 3px solid black; 
+            padding: 5px; 
+            border-radius: 10px; 
+        }
+        
+        /* --- TIC TAC TOE STYLES --- */
+        .scoreboard { 
+            display: flex; 
+            justify-content: space-between; 
+            width: 100%; 
+            background: white; 
+            border: 4px solid black; 
+            border-radius: 10px; 
+            padding: 5px 15px; 
+            font-weight: bold; 
+            margin-bottom: 10px; 
+        }
+        
+        .turn-indicator { 
+            font-weight: bold; 
+            font-size: 18px; 
+            margin: 5px 0 10px 0; 
+            text-align: center; 
+        }
+        
+        .tic-tac-toe { 
+            display: grid; 
+            grid-template-columns: repeat(3, 70px); 
+            grid-template-rows: repeat(3, 70px); 
+            background-color: black; 
+            gap: 4px; 
+            border: 4px solid black; 
+        }
+        
+        .cell { 
+            background-color: #4ade80; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            font-size: 50px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            user-select: none; 
+            transition: background-color 0.2s;
+        }
+        
+        .cell.x { color: red; }
+        .cell.o { color: #0ea5e9; }
+        .cell.winning-cell { background-color: #fef08a; } /* Highlight for the winning line */
+        
+        /* --- LUDO STYLES --- */
+        .ludo-area { 
+            background-color: white; 
+            border: 4px solid black; 
+            border-radius: 10px; 
+            width: 100%; 
+            flex-grow: 1; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            padding: 10px; 
+            position: relative; 
+        }
+        
+        .dice-display { 
+            font-size: 60px; 
+            margin: 10px 0; 
+            cursor: pointer; 
+            user-select: none; 
+            transition: transform 0.2s; 
+        }
+        
+        .dice-display:active { 
+            transform: scale(0.9); 
+        }
+        
+        .ludo-players { 
+            display: flex; 
+            gap: 10px; 
+            flex-wrap: wrap; 
+            justify-content: center; 
+            margin-top: 10px; 
+        }
+        
+        .ludo-player-badge { 
+            padding: 5px 10px; 
+            border: 2px solid black; 
+            border-radius: 10px; 
+            font-weight: bold; 
+            font-size: 12px; 
+            color: white; 
+        }
+        
+        .color-red { background: #ef4444; } 
+        .color-green { background: #22c55e; } 
+        .color-yellow { background: #eab308; color: black; } 
+        .color-blue { background: #3b82f6; }
+
+        /* --- GROUP ADMIN STYLES --- */
+        .admin-panel { 
+            display: none; 
+            width: 100%; 
+            margin-top: 10px; 
+            background: white; 
+            border: 4px solid black; 
+            border-radius: 10px; 
+            padding: 10px; 
+        }
+        
+        .admin-panel h4 { 
+            text-align: center; 
+            margin-bottom: 8px; 
+            font-size: 14px; 
+        }
+        
+        .admin-section-title { 
+            font-size: 11px; 
+            font-weight: bold; 
+            color: #1e692c; 
+            margin: 8px 0 4px 0; 
+            text-transform: uppercase; 
+        }
+        
+        .member-list { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 5px; 
+            max-height: 120px; 
+            overflow-y: auto; 
+        }
+        
+        .member-item { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            background: #f0f0f0; 
+            padding: 5px; 
+            border: 2px solid black; 
+            border-radius: 5px; 
+            font-size: 12px; 
+            font-weight: bold; 
+        }
+        
+        .member-item.banned-item { 
+            background: #fee2e2; 
+            border-color: #dc2626; 
+        }
+        
+        .kick-btn, .ban-btn, .unban-btn { 
+            border: 2px solid black; 
+            border-radius: 5px; 
+            padding: 2px 5px; 
+            cursor: pointer; 
+            font-size: 10px; 
+            font-weight: bold; 
+            color: white; 
+        }
+        
+        .kick-btn { background: #f59e0b; color: black; } 
+        .ban-btn { background: #dc2626; } 
+        .unban-btn { background: #16a34a; }
+
+        .name-display { 
+            background-color: #2b8a3e; 
+            border: 6px solid black; 
+            border-radius: 20px; 
+            padding: 10px; 
+            text-align: center; 
+            color: white; 
+            font-weight: bold; 
+            font-size: 18px; 
+            margin-top: 5px; 
+        }
+
+        @media (max-width: 750px) { 
+            .main-app-wrapper { flex-direction: column; } 
+            .chat-panel, .right-panel { width: 100%; max-width: 350px; } 
         }
     </style>
 </head>
@@ -433,19 +542,19 @@
     <!-- TOP AD BANNER -->
     <div class="ad-container">
         <span class="ad-placeholder-text">Advertisement</span>
-        <ins class="adsbygoogle"
-             style="display:block; width: 100%; height: 100%;"
-             data-ad-client="ca-pub-6434181265093730"
-             data-ad-slot="5314933632"
-             data-ad-format="auto"
+        <ins class="adsbygoogle" 
+             style="display:block; width: 100%; height: 100%;" 
+             data-ad-client="ca-pub-6434181265093730" 
+             data-ad-slot="5314933632" 
+             data-ad-format="auto" 
              data-full-width-responsive="true"></ins>
-        <script> (adsbygoogle = window.adsbygoogle || []).push({}); </script>
+        <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
     </div>
 
     <!-- MAIN APP WRAPPER -->
     <div class="main-app-wrapper">
         
-        <!-- LEFT PANEL: CHAT -->
+        <!-- CHAT PANEL -->
         <div class="chat-panel">
             <div class="chat-header">
                 <div class="chat-header-text">chat</div>
@@ -464,40 +573,52 @@
         <!-- RIGHT PANEL -->
         <div class="right-panel">
             
-            <!-- LOBBY STATE -->
+            <!-- LOBBY -->
             <div class="lobby-view" id="lobby-view">
                 <div class="login-box">
                     
                     <div class="toggle-container">
                         <div class="toggle-slider" id="slider"></div>
-                        <div class="toggle-btn" onclick="slideLobby(0)">1v1 Game</div>
+                        <div class="toggle-btn" onclick="slideLobby(0)">Room Game</div>
                         <div class="toggle-btn" onclick="slideLobby(1)">Group Chat</div>
                     </div>
 
                     <div class="sliding-sections" id="sliding-sections">
                         
-                        <!-- SECTION 1: 1v1 GAME -->
+                        <!-- SECTION 1: GAMES -->
                         <div class="section">
                             <div class="input-line">
-                                <select id="game-select">
+                                <select id="game-select" onchange="toggleLudoColor()">
                                     <option value="tictactoe" selected>Tic-Tac-Toe</option>
                                     <option value="ludo">Ludo</option>
                                 </select>
                             </div>
-                            <div class="input-line"><input type="text" id="room-name" placeholder="1v1 room id"></div>
-                            <div class="input-line"><input type="password" id="room-pass" placeholder="1v1 password"></div>
-                            <div class="action-button" onclick="createRoom()">CREATE 1v1</div>
-                            <div class="action-button" onclick="joinRoom()">JOIN 1v1</div>
+                            
+                            <div class="input-line" id="ludo-color-picker" style="display:none;">
+                                <select id="my-ludo-color">
+                                    <option value="red">Red Team</option>
+                                    <option value="green">Green Team</option>
+                                    <option value="yellow">Yellow Team</option>
+                                    <option value="blue">Blue Team</option>
+                                </select>
+                            </div>
+                            
+                            <div class="input-line"><input type="text" id="room-name" placeholder="room id"></div>
+                            <div class="input-line"><input type="password" id="room-pass" placeholder="password"></div>
+                            
+                            <div class="action-button" onclick="createRoom()">CREATE ROOM</div>
+                            <div class="action-button" onclick="joinRoom()">JOIN ROOM</div>
                         </div>
 
                         <!-- SECTION 2: GROUP CHAT -->
                         <div class="section">
                             <div class="input-line"><input type="text" id="group-name" placeholder="group id"></div>
                             <div class="input-line"><input type="password" id="group-pass" placeholder="group pass"></div>
+                            
                             <div class="action-button" style="background:#0ea5e9" onclick="createGroup()">CREATE GROUP</div>
                             <div class="action-button" style="background:#0284c7" onclick="joinGroup()">JOIN GROUP</div>
                         </div>
-
+                        
                     </div>
                 </div>
                 
@@ -508,57 +629,87 @@
                 </div>
             </div>
 
-            <!-- TIC-TAC-TOE 1V1 VIEW -->
+            <!-- TIC-TAC-TOE VIEW -->
             <div class="active-view" id="tictactoe-view">
                 <div class="board-container">
                     <div class="header-info">
-                        TIC-TAC-TOE :- <span id="display-ttt-room"></span><br>
+                        ROOM: <span id="display-ttt-room"></span> | PASS: <span id="display-ttt-pass"></span>
                     </div>
+                    
                     <div class="scoreboard">
                         <div>You: <span id="ttt-my-score">0</span></div>
                         <div>Opponent: <span id="ttt-friend-score">0</span></div>
                     </div>
+                    
                     <div class="turn-indicator" id="turn-indicator">WAITING...</div>
+                    
                     <div class="tic-tac-toe" id="board">
-                        <div class="cell" onclick="makeMove(0)"></div><div class="cell" onclick="makeMove(1)"></div><div class="cell" onclick="makeMove(2)"></div>
-                        <div class="cell" onclick="makeMove(3)"></div><div class="cell" onclick="makeMove(4)"></div><div class="cell" onclick="makeMove(5)"></div>
-                        <div class="cell" onclick="makeMove(6)"></div><div class="cell" onclick="makeMove(7)"></div><div class="cell" onclick="makeMove(8)"></div>
+                        <div class="cell" onclick="makeMove(0)"></div>
+                        <div class="cell" onclick="makeMove(1)"></div>
+                        <div class="cell" onclick="makeMove(2)"></div>
+                        <div class="cell" onclick="makeMove(3)"></div>
+                        <div class="cell" onclick="makeMove(4)"></div>
+                        <div class="cell" onclick="makeMove(5)"></div>
+                        <div class="cell" onclick="makeMove(6)"></div>
+                        <div class="cell" onclick="makeMove(7)"></div>
+                        <div class="cell" onclick="makeMove(8)"></div>
                     </div>
                 </div>
-                <div class="action-button" onclick="requestNewGame()">NEW GAME</div>
+                <div class="action-button" id="btn-ttt-new" onclick="requestNewGame()">NEW GAME</div>
                 <div class="action-button btn-quit" onclick="quitRoom()">QUIT ROOM</div>
             </div>
 
-            <!-- LUDO 1V1 VIEW -->
+            <!-- LUDO VIEW -->
             <div class="active-view" id="ludo-view">
                 <div class="board-container">
                     <div class="header-info">
-                        LUDO :- <span id="display-ludo-room"></span><br>
+                        LUDO ROOM: <span id="display-ludo-room"></span> | PASS: <span id="display-ludo-pass"></span>
                     </div>
-                    <div class="scoreboard">
-                        <div>You: <span id="ludo-my-score">0</span></div>
-                        <div>Opponent: <span id="ludo-friend-score">0</span></div>
-                    </div>
-                    <div class="turn-indicator" id="ludo-turn-indicator">WAITING...</div>
+                    
+                    <div class="turn-indicator" id="ludo-turn-indicator">WAITING FOR PLAYERS...</div>
+                    
                     <div class="ludo-area">
-                        <h4 style="color: #2b8a3e;">Dice Sync Active</h4>
-                        <div class="dice-display" id="dice-display">🎲</div>
-                        <button class="action-button" style="width: 80%;" onclick="rollDice()">ROLL DICE</button>
+                        <div class="dice-display" id="dice-display" onclick="rollLudoDice()">🎲</div>
+                        <h4 style="color: #2b8a3e; margin-top:5px;">Tap Dice to Roll</h4>
+                        
+                        <div class="ludo-players" id="ludo-players-list">
+                            <!-- Populated by JS -->
+                        </div>
                     </div>
                 </div>
                 <div class="action-button btn-quit" onclick="quitRoom()">QUIT ROOM</div>
             </div>
 
-            <!-- GROUP CHAT VIEW (Unchanged basically, just matching IDs) -->
+            <!-- GROUP CHAT VIEW -->
             <div class="active-view" id="group-view">
                 <div class="board-container">
                     <div class="header-info">
-                        GROUP ID :- <span id="display-group-id"></span><br>
-                        PASS :- <span id="display-group-pass"></span>
+                        GROUP ID: <span id="display-group-id"></span><br>
+                        PASS: <span id="display-group-pass"></span>
+                        <div id="admin-key-display" style="display:none; color: #fbbf24; font-size: 12px; margin-top: 5px;">
+                            ADMIN KEY: <span id="display-admin-key"></span>
+                        </div>
                     </div>
+                    
                     <h3 style="margin-top:10px;">GROUP ACTIVE</h3>
                     <p style="font-size:12px; text-align:center; margin-bottom:10px;">Chat is linked to the left panel.</p>
+                    
+                    <div class="admin-panel" id="admin-panel">
+                        <h4>👑 Admin Controls</h4>
+                        
+                        <div class="admin-section-title">Active Members</div>
+                        <div class="member-list" id="member-list"></div>
+                        
+                        <div class="admin-section-title">Banned Players</div>
+                        <div class="member-list" id="banned-list"></div>
+                    </div>
                 </div>
+                
+                <div id="claim-admin-section" style="display: none; flex-direction: column; gap: 5px; margin-top: 10px; margin-bottom: 5px;">
+                    <input type="text" id="admin-key-input" placeholder="enter admin key" style="text-align:center; padding:8px; border:3px solid black; border-radius:15px; font-weight:bold; font-size:14px; outline:none;">
+                    <div class="action-button" style="background:#fbbf24; color:black; font-size:14px; padding:8px;" onclick="claimAdmin()">CLAIM ADMIN</div>
+                </div>
+                
                 <div class="action-button btn-quit" onclick="quitGroup()">QUIT GROUP</div>
             </div>
         </div>
@@ -567,399 +718,909 @@
     <!-- BOTTOM AD BANNER -->
     <div class="ad-container">
         <span class="ad-placeholder-text">Advertisement</span>
-        <ins class="adsbygoogle"
-             style="display:block; width: 100%; height: 100%;"
-             data-ad-client="ca-pub-6434181265093730"
-             data-ad-slot="5314933632"
-             data-ad-format="auto"
+        <ins class="adsbygoogle" 
+             style="display:block; width: 100%; height: 100%;" 
+             data-ad-client="ca-pub-6434181265093730" 
+             data-ad-slot="5314933632" 
+             data-ad-format="auto" 
              data-full-width-responsive="true"></ins>
-        <script> (adsbygoogle = window.adsbygoogle || []).push({}); </script>
+        <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
     </div>
 
     <script>
         // ==========================================
-        // SOUND EFFECTS & NOTIFICATIONS
+        // SOUNDS & NOTIFICATIONS
         // ==========================================
         const soundClick = new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3');
         const soundWin = new Audio('https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3');
         const soundMsg = new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3');
-
+        
         if (Notification.permission !== "granted" && Notification.permission !== "denied") {
             Notification.requestPermission();
         }
-
-        function triggerNotification(title, body) {
+        
+        function triggerNotification(title, body) { 
             if (Notification.permission === 'granted' && document.hidden) {
-                new Notification(title, { body: body });
+                new Notification(title, { body: body }); 
             }
         }
 
         // ==========================================
         // FIREBASE SETUP
         // ==========================================
-        const firebaseConfig = {
-            apiKey: "AIzaSyDaFggwGKQJswcouN6l4LCTV6uapi4ivaQ",
-            authDomain: "whatshapp-94037.firebaseapp.com",
+        const firebaseConfig = { 
+            apiKey: "AIzaSyDaFggwGKQJswcouN6l4LCTV6uapi4ivaQ", 
+            authDomain: "whatshapp-94037.firebaseapp.com", 
             databaseURL: "https://whatshapp-94037-default-rtdb.firebaseio.com", 
-            projectId: "whatshapp-94037"
+            projectId: "whatshapp-94037" 
         };
-        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
         const db = firebase.database();
 
-        let chatMode = 'GLOBAL'; 
+        let chatMode = 'GLOBAL';
         let myName = "Player";
-        let globalChat = [], p2pChat = [], groupChat = [];
+        let globalChat = [];
+        let roomChat = [];
+        let groupChat = [];
 
-        // 1v1 Game Variables
-        let peer = null, connection = null, friendName = "Friend", isHost = false;
-        let currentGame = "tictactoe"; // or 'ludo'
-        
-        // Tic-Tac-Toe State
-        let board = ["", "", "", "", "", "", "", "", ""];
-        let mySymbol = "X", currentTurn = "X", gameActive = true;
-        let myWins = 0, friendWins = 0;
-
-        // UI Elements
-        const lobbyView = document.getElementById('lobby-view');
-        const tttView = document.getElementById('tictactoe-view');
-        const ludoView = document.getElementById('ludo-view');
-        const groupView = document.getElementById('group-view');
-        const chatMessages = document.getElementById('chat-messages');
-        const chatModeBadge = document.getElementById('chat-mode-badge');
-        const nameInput = document.getElementById('your-name');
-
-        window.onload = () => {
-            const savedName = localStorage.getItem('karanUsername');
-            if (savedName) { nameInput.value = savedName; myName = savedName; }
-            renderChat();
-        };
-
+        // ==========================================
+        // UI TOGGLES & VALIDATION
+        // ==========================================
         function slideLobby(index) {
-            document.getElementById('sliding-sections').style.transform = index === 0 ? 'translateX(0)' : 'translateX(-50%)';
-            document.getElementById('slider').style.left = index === 0 ? '0' : '50%';
+            const sections = document.getElementById('sliding-sections');
+            const slider = document.getElementById('slider');
+            if (index === 0) {
+                sections.style.transform = 'translateX(0)';
+                slider.style.left = '0';
+            } else {
+                sections.style.transform = 'translateX(-50%)';
+                slider.style.left = '50%';
+            }
         }
-
+        
+        function toggleLudoColor() {
+            const gameSelect = document.getElementById('game-select').value;
+            const colorPicker = document.getElementById('ludo-color-picker');
+            if (gameSelect === 'ludo') {
+                colorPicker.style.display = 'flex';
+            } else {
+                colorPicker.style.display = 'none';
+            }
+        }
+        
         function validateName() {
-            myName = nameInput.value.trim();
-            if (!myName) { alert("Please enter 'your name' at the bottom first!"); return false; }
+            myName = document.getElementById('your-name').value.trim();
+            if (!myName) { 
+                alert("Please enter 'your name' at the bottom first!"); 
+                return false; 
+            }
             localStorage.setItem('karanUsername', myName);
             return true;
         }
+        
+        window.onload = () => {
+            const savedName = localStorage.getItem('karanUsername');
+            if (savedName) {
+                document.getElementById('your-name').value = savedName;
+            }
+            renderChat();
+        };
 
         // ==========================================
-        // 💬 GLOBAL & GROUP CHAT (Simplified from your code)
+        // GLOBAL CHAT
         // ==========================================
         db.ref("global_chat").on("child_added", (snapshot) => {
             const data = snapshot.val();
-            const isMine = (data.sender === nameInput.value.trim());
-            globalChat.push({ sender: data.sender, msg: data.msg, isMine });
+            const currentInputName = document.getElementById('your-name').value.trim();
+            const isMine = (data.sender === currentInputName);
+            
+            globalChat.push({ sender: data.sender, msg: data.msg, isMine: isMine });
+            
             if (chatMode === 'GLOBAL') {
                 addMessageToUI(data.sender, data.msg, isMine);
-                if (!isMine) { soundMsg.play().catch(()=>{}); triggerNotification("Global Chat", `${data.sender}: ${data.msg}`); }
+                if (!isMine) { 
+                    soundMsg.play().catch(()=>{}); 
+                    triggerNotification("Global Chat", `${data.sender}: ${data.msg}`); 
+                }
             }
         });
 
-        // Group functions omitted for brevity but they function exactly the same as your source
-        function createGroup() { alert("Group code remains untouched per your setup!"); }
-        function joinGroup() { alert("Group code remains untouched per your setup!"); }
-        function quitGroup() { lobbyView.style.display = 'flex'; groupView.style.display = 'none'; chatMode = 'GLOBAL'; renderChat(); }
-
         // ==========================================
-        // 🎮 1v1 PRIVATE ROOM LOGIC (PEERJS)
+        // GROUP CHAT & ADMIN LOGIC
         // ==========================================
-        function getSanitizedId(prefix, type) {
-            const id = document.getElementById(`${type}-name`).value.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+        let currentGroupId = null;
+        let isGroupAdmin = false;
+        let groupListeners = [];
+        
+        function getSanitizedId(prefix, rawStr) {
+            const id = rawStr.toLowerCase().replace(/[^a-z0-9]/g, '');
             return id ? `${prefix}-${id}` : null;
         }
 
+        async function createGroup() {
+            if(!validateName()) return;
+            
+            const rawId = document.getElementById('group-name').value.trim();
+            const rawPass = document.getElementById('group-pass').value.trim();
+            
+            if(!rawId || !rawPass) {
+                return alert("Enter Group ID and Password!");
+            }
+            
+            const groupId = getSanitizedId('group', rawId);
+            
+            const snapshot = await db.ref(`groups/${groupId}`).once('value');
+            if (snapshot.exists()) {
+                return alert("Group ID already exists! Try joining or pick a new name.");
+            }
+
+            const adminKey = Math.floor(1000 + Math.random() * 9000).toString();
+            
+            await db.ref(`groups/${groupId}`).set({
+                settings: { pass: rawPass, admin: myName, adminKey: adminKey },
+                members: { [myName]: true }
+            });
+
+            isGroupAdmin = true;
+            setupGroup(groupId, rawId, rawPass, adminKey);
+            appendSystemMessage("You created the group. You are the Admin.");
+        }
+
+        async function joinGroup() {
+            if(!validateName()) return;
+            
+            const rawId = document.getElementById('group-name').value.trim();
+            const rawPass = document.getElementById('group-pass').value.trim();
+            
+            if(!rawId || !rawPass) {
+                return alert("Enter Group ID and Password!");
+            }
+            
+            const groupId = getSanitizedId('group', rawId);
+
+            const snapshot = await db.ref(`groups/${groupId}`).once('value');
+            if (!snapshot.exists()) {
+                return alert("Group not found!");
+            }
+            
+            const groupData = snapshot.val();
+            
+            if (groupData.settings.pass !== rawPass) {
+                return alert("Wrong Group Password!");
+            }
+            
+            if (groupData.banned && groupData.banned[myName]) {
+                return alert("You are BANNED from this group!");
+            }
+
+            await db.ref(`groups/${groupId}/members/${myName}`).set(true);
+            isGroupAdmin = false;
+            
+            setupGroup(groupId, rawId, rawPass, null);
+            db.ref(`groups/${groupId}/chat`).push({ sender: "System", msg: `${myName} joined the group!` });
+        }
+
+        function setupGroup(groupId, rawId, rawPass, adminKey) {
+            currentGroupId = groupId; 
+            chatMode = 'GROUP'; 
+            groupChat = [];
+            
+            document.getElementById('lobby-view').style.display = 'none';
+            document.getElementById('group-view').style.display = 'flex';
+            document.getElementById('display-group-id').innerText = rawId;
+            document.getElementById('display-group-pass').innerText = rawPass;
+            
+            const badge = document.getElementById('chat-mode-badge');
+            badge.innerText = "GROUP CHAT"; 
+            badge.style.backgroundColor = "#0ea5e9";
+            
+            if (isGroupAdmin) {
+                enableAdminFeatures(adminKey);
+            } else {
+                document.getElementById('admin-key-display').style.display = 'none';
+                document.getElementById('admin-panel').style.display = 'none';
+                document.getElementById('claim-admin-section').style.display = 'flex';
+            }
+
+            db.ref(`groups/${groupId}/members/${myName}`).onDisconnect().remove();
+
+            const chatRef = db.ref(`groups/${groupId}/chat`);
+            chatRef.on('child_added', (snap) => {
+                const data = snap.val();
+                const isMine = (data.sender === myName);
+                
+                groupChat.push({ sender: data.sender, msg: data.msg, isMine: isMine });
+                
+                if(chatMode === 'GROUP') {
+                    if (data.sender === "System") {
+                        appendSystemMessage(data.msg);
+                    } else { 
+                        addMessageToUI(data.sender, data.msg, isMine); 
+                        if(!isMine) soundMsg.play().catch(()=>{}); 
+                    }
+                }
+            });
+            groupListeners.push({ ref: chatRef, event: 'child_added' });
+
+            const kickRef = db.ref(`groups/${groupId}/kicked/${myName}`);
+            kickRef.on('value', (snap) => {
+                if (snap.exists() && snap.val() === true) { 
+                    kickRef.remove(); 
+                    alert("Kicked by Admin!"); 
+                    quitGroup(true); 
+                }
+            });
+            groupListeners.push({ ref: kickRef, event: 'value' });
+
+            const banRef = db.ref(`groups/${groupId}/banned/${myName}`);
+            banRef.on('value', (snap) => {
+                if (snap.exists() && snap.val() === true) { 
+                    alert("Banned by Admin!"); 
+                    quitGroup(true); 
+                }
+            });
+            groupListeners.push({ ref: banRef, event: 'value' });
+
+            renderChat();
+        }
+
+        function enableAdminFeatures(adminKey) {
+            document.getElementById('admin-key-display').style.display = 'block';
+            document.getElementById('display-admin-key').innerText = adminKey;
+            document.getElementById('admin-panel').style.display = 'block';
+            document.getElementById('claim-admin-section').style.display = 'none';
+            
+            const memRef = db.ref(`groups/${currentGroupId}/members`);
+            memRef.on('value', (snap) => {
+                const members = snap.val() || {};
+                const listHtml = document.getElementById('member-list');
+                listHtml.innerHTML = '';
+                
+                Object.keys(members).forEach(mem => {
+                    if(mem !== myName) {
+                        listHtml.innerHTML += `
+                            <div class="member-item">
+                                <span>${mem}</span>
+                                <div style="display:flex; gap:4px;">
+                                    <button class="kick-btn" onclick="kickMember('${mem}')">KICK</button>
+                                    <button class="ban-btn" onclick="banMember('${mem}')">BAN</button>
+                                </div>
+                            </div>
+                        `;
+                    }
+                });
+            });
+            groupListeners.push({ ref: memRef, event: 'value' });
+
+            const bannedRef = db.ref(`groups/${currentGroupId}/banned`);
+            bannedRef.on('value', (snap) => {
+                const banned = snap.val() || {};
+                const bannedHtml = document.getElementById('banned-list');
+                bannedHtml.innerHTML = '';
+                
+                Object.keys(banned).forEach(mem => {
+                    bannedHtml.innerHTML += `
+                        <div class="member-item banned-item">
+                            <span>🚫 ${mem}</span>
+                            <button class="unban-btn" onclick="unbanMember('${mem}')">🔓 UNBAN</button>
+                        </div>
+                    `;
+                });
+            });
+            groupListeners.push({ ref: bannedRef, event: 'value' });
+        }
+
+        async function claimAdmin() {
+            const keyInput = document.getElementById('admin-key-input').value.trim();
+            const snap = await db.ref(`groups/${currentGroupId}/settings/adminKey`).once('value');
+            
+            if(String(snap.val()) === String(keyInput)) {
+                isGroupAdmin = true; 
+                alert("Success! You are now Admin.");
+                enableAdminFeatures(keyInput);
+            } else {
+                alert("Incorrect Admin Key!");
+            }
+        }
+        
+        function kickMember(mem) { 
+            db.ref(`groups/${currentGroupId}/kicked/${mem}`).set(true); 
+            db.ref(`groups/${currentGroupId}/members/${mem}`).remove(); 
+            db.ref(`groups/${currentGroupId}/chat`).push({ sender: "System", msg: `${mem} was kicked.`}); 
+        }
+        
+        function banMember(mem) { 
+            db.ref(`groups/${currentGroupId}/banned/${mem}`).set(true); 
+            db.ref(`groups/${currentGroupId}/members/${mem}`).remove(); 
+            db.ref(`groups/${currentGroupId}/chat`).push({ sender: "System", msg: `${mem} was banned.`}); 
+        }
+        
+        function unbanMember(mem) { 
+            db.ref(`groups/${currentGroupId}/banned/${mem}`).remove(); 
+            db.ref(`groups/${currentGroupId}/chat`).push({ sender: "System", msg: `${mem} was unbanned.`}); 
+        }
+        
+        async function quitGroup(wasRemoved = false) {
+            if (currentGroupId) {
+                groupListeners.forEach(listener => listener.ref.off(listener.event)); 
+                groupListeners = [];
+                
+                if (!wasRemoved) {
+                    db.ref(`groups/${currentGroupId}/chat`).push({ sender: "System", msg: `${myName} left.` });
+                    await db.ref(`groups/${currentGroupId}/members/${myName}`).remove();
+                }
+            }
+            
+            db.ref(`groups/${currentGroupId}/members/${myName}`).onDisconnect().cancel();
+            
+            currentGroupId = null; 
+            isGroupAdmin = false; 
+            chatMode = 'GLOBAL';
+            
+            document.getElementById('group-view').style.display = 'none';
+            document.getElementById('lobby-view').style.display = 'flex';
+            document.getElementById('chat-mode-badge').innerText = "GLOBAL";
+            document.getElementById('chat-mode-badge').style.backgroundColor = "#1e692c";
+            
+            renderChat();
+        }
+
+        // ==========================================
+        // MULTIPLAYER ROOM (PEERJS)
+        // ==========================================
+        let peer = null;
+        let hostConnection = null; 
+        let clientConnections = []; 
+        let isHost = false;
+        let currentGame = "tictactoe";
+        let playersInRoom = []; 
+        
         function cleanPeer() {
-            if (connection) { connection.close(); connection = null; }
-            if (peer) { peer.destroy(); peer = null; }
-            myWins = 0; friendWins = 0;
-            updateScoreUI();
+            if (hostConnection) { 
+                hostConnection.close(); 
+                hostConnection = null; 
+            }
+            clientConnections.forEach(c => c.close()); 
+            clientConnections = [];
+            
+            if (peer) { 
+                peer.destroy(); 
+                peer = null; 
+            }
+            
+            myWins = 0; 
+            friendWins = 0; 
+            roomChat = []; 
+            playersInRoom = [];
         }
 
         function createRoom() {
             if(!validateName()) return;
+            
             const rid = document.getElementById('room-name').value.trim();
             const rp = document.getElementById('room-pass').value.trim();
-            if(!rid || !rp) return alert("Enter room name and password!");
             
-            cleanPeer();
-            isHost = true; mySymbol = "X";
+            if(!rid || !rp) {
+                return alert("Enter room id and pass!");
+            }
+            
+            cleanPeer(); 
+            isHost = true; 
             currentGame = document.getElementById('game-select').value;
             
-            // Generate standard room ID. If someone uses it for ANY game, it will reject.
-            const peerId = getSanitizedId('karan', 'room');
-            peer = new Peer(peerId); 
+            let hostColor = document.getElementById('my-ludo-color').value;
+            let hostSymbol = "X";
+            playersInRoom.push({ name: myName, id: 'host', color: hostColor, symbol: hostSymbol });
+            
+            peer = new Peer(getSanitizedId('room', rid)); 
             
             peer.on('open', () => {
-                switchToGameView();
-                appendSystemMessage(`Room created (${currentGame}). Waiting for opponent...`);
+                switchToRoomView(rid, rp);
+                appendSystemMessage(`Room created (${currentGame}). Waiting for players...`);
             });
             
             peer.on('error', (err) => {
-                if (err.type === 'unavailable-id') {
-                    alert("Room ID already exists! If this ID is being used for another game, you must pick a new one to avoid conflicts.");
+                if(err.type === 'unavailable-id') {
+                    alert("Room ID taken! Pick a new ID.");
                 } else {
                     alert("Room Error: " + err.type);
                 }
                 quitRoom();
             });
 
-            peer.on('connection', (conn) => { connection = conn; setupConnectionListeners(); });
+            // Host accepts incoming connections
+            peer.on('connection', (conn) => {
+                conn.on('data', (data) => {
+                    if (data.type === 'join-request') {
+                        if (data.pass !== rp) { 
+                            conn.send({ type: 'reject', reason: "Wrong Password" }); 
+                            setTimeout(()=>conn.close(), 500); 
+                            return; 
+                        }
+                        
+                        if (currentGame === 'ludo') {
+                            const colorTaken = playersInRoom.find(p => p.color === data.color);
+                            if (colorTaken) { 
+                                conn.send({ type: 'reject', reason: "Color already taken! Pick another." }); 
+                                setTimeout(()=>conn.close(), 500); 
+                                return; 
+                            }
+                            if (playersInRoom.length >= 4) { 
+                                conn.send({ type: 'reject', reason: "Ludo room is full (4 players)." }); 
+                                setTimeout(()=>conn.close(), 500); 
+                                return; 
+                            }
+                            
+                            playersInRoom.push({ name: data.name, id: conn.peer, color: data.color });
+                        } else {
+                            if (playersInRoom.length >= 2) { 
+                                conn.send({ type: 'reject', reason: "Tic-Tac-Toe room full (2 players)." }); 
+                                setTimeout(()=>conn.close(), 500); 
+                                return; 
+                            }
+                            playersInRoom.push({ name: data.name, id: conn.peer, symbol: "O" });
+                        }
+                        
+                        clientConnections.push(conn);
+                        setupHostClientListener(conn);
+                        
+                        // Approve & Sync State to new player
+                        conn.send({ 
+                            type: 'approve', 
+                            game: currentGame, 
+                            players: playersInRoom, 
+                            state: { board, currentTurn, ludoTurnIdx } 
+                        });
+                        
+                        // Broadcast new player to everyone else
+                        broadcastToRoom({ 
+                            type: 'player-joined', 
+                            players: playersInRoom, 
+                            newPlayer: data.name 
+                        });
+                        
+                        if(currentGame === 'ludo') {
+                            renderLudoPlayers();
+                        } else {
+                            document.getElementById('btn-ttt-new').style.display = 'block';
+                        }
+                    }
+                });
+            });
         }
 
         function joinRoom() {
             if(!validateName()) return;
+            
             const rid = document.getElementById('room-name').value.trim();
             const rp = document.getElementById('room-pass').value.trim();
-            if(!rid || !rp) return alert("Enter room name and password!");
-
-            cleanPeer();
-            isHost = false; mySymbol = "O";
-            // Client temporarily assumes dropdown game, but Handshake overrides it based on Host
             
-            peer = new Peer(); 
-            peer.on('open', () => {
-                connection = peer.connect(getSanitizedId('karan', 'room'));
-                connection.on('open', () => {
-                    setupConnectionListeners();
-                    connection.send({ type: 'handshake', name: myName });
-                });
-            });
-            peer.on('error', () => { alert("Could not connect! Room not found."); quitRoom(); });
-        }
-
-        function setupConnectionListeners() {
-            connection.on('data', (data) => {
-                if (data.type === 'handshake') {
-                    friendName = data.name;
-                    if (friendName === myName) myName += "_" + Math.floor(Math.random() * 100);
-                    // Host replies with the game THEY chose to force sync the client
-                    connection.send({ type: 'handshake-reply', approvedName: myName, hostName: myName, gameType: currentGame });
-                    finalizeRoomJoin();
-                } else if (data.type === 'handshake-reply') {
-                    myName = data.approvedName; friendName = data.hostName;
-                    currentGame = data.gameType; // Sync to host's game
-                    finalizeRoomJoin();
-                } else if (data.type === 'chat') {
-                    p2pChat.push({ sender: data.sender, msg: data.msg, isMine: false });
-                    if(chatMode === 'P2P') {
-                        addMessageToUI(data.sender, data.msg, false);
-                        soundMsg.play().catch(()=>{});
-                        triggerNotification("New Private Msg", `${data.sender}: ${data.msg}`);
-                    }
-                } else if (data.type === 'move') {
-                    receiveMove(data.index, data.symbol);
-                } else if (data.type === 'roll-dice') {
-                    receiveDice(data.value);
-                } else if (data.type === 'new-game') { 
-                    resetBoard(); 
-                    appendSystemMessage(`${friendName} started a new game!`); 
-                }
-            });
-            connection.on('close', () => { alert("Opponent disconnected."); quitRoom(); });
-        }
-
-        function finalizeRoomJoin() {
-            switchToGameView();
-            appendSystemMessage(`${friendName} joined the room!`);
-            resetBoard();
-        }
-
-        function switchToGameView() {
-            chatMode = 'P2P';
-            p2pChat = [];
-            lobbyView.style.display = 'none';
-            tttView.style.display = 'none';
-            ludoView.style.display = 'none';
-
-            if (currentGame === 'tictactoe') {
-                tttView.style.display = 'flex';
-                document.getElementById('display-ttt-room').innerText = document.getElementById('room-name').value;
-            } else {
-                ludoView.style.display = 'flex';
-                document.getElementById('display-ludo-room').innerText = document.getElementById('room-name').value;
+            if(!rid || !rp) {
+                return alert("Enter room id and pass!");
             }
 
-            chatModeBadge.innerText = "PRIVATE 1V1";
-            chatModeBadge.style.backgroundColor = "#dc2626";
-            updateScoreUI();
+            cleanPeer(); 
+            isHost = false; 
+            const myColor = document.getElementById('my-ludo-color').value;
+
+            peer = new Peer(); 
+            peer.on('open', () => {
+                hostConnection = peer.connect(getSanitizedId('room', rid));
+                
+                hostConnection.on('open', () => {
+                    hostConnection.send({ type: 'join-request', pass: rp, name: myName, color: myColor });
+                    
+                    hostConnection.on('data', (data) => {
+                        if (data.type === 'reject') {
+                            alert("Join Failed: " + data.reason);
+                            quitRoom();
+                        } else if (data.type === 'approve') {
+                            currentGame = data.game;
+                            playersInRoom = data.players;
+                            board = data.state.board; 
+                            currentTurn = data.state.currentTurn; 
+                            ludoTurnIdx = data.state.ludoTurnIdx;
+                            
+                            const myData = playersInRoom.find(p => p.id === peer.id);
+                            mySymbol = myData.symbol || "O";
+                            
+                            switchToRoomView(rid, rp);
+                            appendSystemMessage("Joined Room successfully!");
+                            
+                            if (currentGame === 'ludo') {
+                                renderLudoPlayers();
+                            } else { 
+                                updateBoardUI(); 
+                                document.getElementById('btn-ttt-new').style.display = 'none'; // Only host clicks new game
+                            } 
+                        }
+                        // General Room events forwarded from Host
+                        else {
+                            handleRoomMessage(data);
+                        }
+                    });
+                });
+            });
+            
+            peer.on('error', () => { 
+                alert("Could not connect! Room not found."); 
+                quitRoom(); 
+            });
+        }
+
+        // Host relays messages to everyone in the room
+        function broadcastToRoom(data, excludeConn = null) {
+            clientConnections.forEach(c => {
+                if (c !== excludeConn && c.open) {
+                    c.send(data);
+                }
+            });
+            handleRoomMessage(data); // Host acts on the message locally too
+        }
+
+        function setupHostClientListener(conn) {
+            conn.on('data', (data) => {
+                // Host receives action from client, broadcasts to all
+                if (data.type === 'chat' || data.type === 'move' || data.type === 'roll-dice') {
+                    broadcastToRoom(data, conn); // broadcast to others
+                    handleRoomMessage(data);     // host handles locally
+                }
+            });
+            
+            conn.on('close', () => {
+                const disconnectedUser = playersInRoom.find(p => p.id === conn.peer);
+                if(disconnectedUser) {
+                    clientConnections = clientConnections.filter(c => c !== conn);
+                    playersInRoom = playersInRoom.filter(p => p.id !== conn.peer);
+                    
+                    broadcastToRoom({ type: 'player-left', players: playersInRoom, name: disconnectedUser.name });
+                    
+                    if(currentGame === 'ludo') {
+                        renderLudoPlayers();
+                    }
+                }
+            });
+        }
+
+        function handleRoomMessage(data) {
+            if (data.type === 'chat') {
+                const isMine = data.sender === myName;
+                if(!isMine) {
+                    roomChat.push({ sender: data.sender, msg: data.msg, isMine: false });
+                }
+                
+                if(chatMode === 'ROOM' && !isMine) {
+                    addMessageToUI(data.sender, data.msg, false);
+                    soundMsg.play().catch(()=>{}); 
+                    triggerNotification("Room Chat", `${data.sender}: ${data.msg}`);
+                }
+            } else if (data.type === 'player-joined') {
+                playersInRoom = data.players;
+                appendSystemMessage(`${data.newPlayer} joined!`);
+                if(currentGame === 'ludo') renderLudoPlayers();
+                
+            } else if (data.type === 'player-left') {
+                playersInRoom = data.players;
+                appendSystemMessage(`${data.name} left the room.`);
+                if(currentGame === 'ludo') renderLudoPlayers();
+                
+            } else if (data.type === 'move') {
+                receiveTTTMove(data.index, data.symbol);
+                
+            } else if (data.type === 'roll-dice') {
+                receiveLudoDice(data.value, data.roller);
+                
+            } else if (data.type === 'new-game') {
+                board = ["", "", "", "", "", "", "", "", ""]; 
+                gameActive = true; 
+                currentTurn = data.turn; // This is the randomized turn from the host
+                
+                // Clear any winning highlights
+                const cells = document.querySelectorAll('.cell');
+                cells.forEach(c => c.classList.remove('winning-cell'));
+                
+                updateBoardUI();
+                appendSystemMessage(`New Game started! ${data.turn} goes first.`);
+            }
+        }
+
+        function switchToRoomView(rid, rp) {
+            chatMode = 'ROOM'; 
+            roomChat = [];
+            
+            document.getElementById('lobby-view').style.display = 'none';
+            document.getElementById('tictactoe-view').style.display = 'none';
+            document.getElementById('ludo-view').style.display = 'none';
+
+            if (currentGame === 'tictactoe') {
+                document.getElementById('tictactoe-view').style.display = 'flex';
+                document.getElementById('display-ttt-room').innerText = rid;
+                document.getElementById('display-ttt-pass').innerText = rp;
+            } else {
+                document.getElementById('ludo-view').style.display = 'flex';
+                document.getElementById('display-ludo-room').innerText = rid;
+                document.getElementById('display-ludo-pass').innerText = rp;
+            }
+
+            const badge = document.getElementById('chat-mode-badge');
+            badge.innerText = "PRIVATE ROOM"; 
+            badge.style.backgroundColor = "#dc2626";
+            
+            updateScoreUI(); 
             renderChat();
         }
 
         function quitRoom() {
-            chatMode = 'GLOBAL';
-            if (connection) connection.close();
+            chatMode = 'GLOBAL'; 
             cleanPeer();
-            lobbyView.style.display = 'flex';
-            tttView.style.display = 'none';
-            ludoView.style.display = 'none';
-            chatModeBadge.innerText = "GLOBAL";
-            chatModeBadge.style.backgroundColor = "#1e692c";
+            
+            document.getElementById('lobby-view').style.display = 'flex';
+            document.getElementById('tictactoe-view').style.display = 'none';
+            document.getElementById('ludo-view').style.display = 'none';
+            
+            document.getElementById('chat-mode-badge').innerText = "GLOBAL";
+            document.getElementById('chat-mode-badge').style.backgroundColor = "#1e692c";
+            
             renderChat();
         }
 
-        function updateScoreUI() {
-            if (currentGame === 'tictactoe') {
-                document.getElementById('ttt-my-score').innerText = myWins;
-                document.getElementById('ttt-friend-score').innerText = friendWins;
-            } else {
-                document.getElementById('ludo-my-score').innerText = myWins;
-                document.getElementById('ludo-friend-score').innerText = friendWins;
-            }
-        }
-
         // ==========================================
-        // 💬 CHAT MESSAGING 
+        // TIC TAC TOE LOGIC
         // ==========================================
-        function handleChatKeyPress(e) { if (e.key === 'Enter') sendMessage(); }
-
-        function sendMessage() {
-            if (!validateName()) return;
-            const input = document.getElementById('chat-input');
-            const msg = input.value.trim();
-            if (!msg) return;
-
-            if (chatMode === 'P2P' && connection && connection.open) {
-                connection.send({ type: 'chat', msg: msg, sender: myName });
-                p2pChat.push({ sender: myName, msg: msg, isMine: true });
-                addMessageToUI(myName, msg, true);
-            } else if (chatMode === 'GLOBAL') {
-                db.ref("global_chat").push({ sender: myName, msg: msg });
-            }
-            input.value = '';
-        }
-
-        function addMessageToUI(sender, msg, isMine) {
-            const container = document.createElement('div');
-            container.className = `msg-container ${isMine ? 'mine' : 'theirs'}`;
-            container.innerHTML = `<div class="msg-name">${sender}</div><div class="msg-bubble">${msg}</div>`;
-            chatMessages.appendChild(container);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        }
-
-        function appendSystemMessage(msg) {
-            const div = document.createElement('div');
-            div.style.cssText = 'text-align:center; font-size:12px; color:gray; margin:5px 0; font-weight:bold;';
-            div.innerText = msg;
-            chatMessages.appendChild(div);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        }
-
-        function renderChat() {
-            chatMessages.innerHTML = "";
-            let activeChat = chatMode === 'P2P' ? p2pChat : globalChat;
-            appendSystemMessage(`--- ${chatMode === 'P2P' ? '1v1 PRIVATE' : 'GLOBAL LIVE'} CHAT ---`);
-            activeChat.forEach(c => addMessageToUI(c.sender, c.msg, c.isMine));
-        }
-
-        // ==========================================
-        // 🎲 TIC TAC TOE LOGIC 
-        // ==========================================
+        let board = ["", "", "", "", "", "", "", "", ""];
+        let mySymbol = "X";
+        let currentTurn = "X";
+        let gameActive = false;
+        let myWins = 0;
+        let friendWins = 0;
         const cells = document.querySelectorAll('.cell');
-        const turnInd = document.getElementById('turn-indicator');
 
         function makeMove(index) {
-            if (chatMode !== 'P2P' || !connection || !connection.open) return alert("Wait for opponent!");
             if (!gameActive || board[index] !== "" || currentTurn !== mySymbol) return;
             
             soundClick.play().catch(()=>{});
-            updateBoard(index, mySymbol);
-            connection.send({ type: 'move', index: index, symbol: mySymbol });
+            
+            const moveData = { type: 'move', index: index, symbol: mySymbol };
+            if(isHost) { 
+                broadcastToRoom(moveData); 
+            } else { 
+                hostConnection.send(moveData); 
+            } 
+            
+            // Optimistic update for the person who clicked
+            if(!isHost) { 
+                receiveTTTMove(index, mySymbol); 
+            }
+        }
+
+        function receiveTTTMove(index, symbol) {
+            board[index] = symbol; 
+            currentTurn = currentTurn === "X" ? "O" : "X";
+            updateBoardUI(); 
             checkWinner();
         }
 
-        function receiveMove(index, symbol) { 
-            soundClick.play().catch(()=>{});
-            triggerNotification("Your Turn!", "Opponent made a move.");
-            updateBoard(index, symbol); 
-            checkWinner(); 
-        }
-
-        function updateBoard(index, symbol) {
-            board[index] = symbol;
-            cells[index].innerText = symbol;
-            cells[index].classList.add(symbol.toLowerCase());
-            currentTurn = currentTurn === "X" ? "O" : "X";
-            if (connection && connection.open) {
-                turnInd.innerText = currentTurn === mySymbol ? `YOUR TURN :- ${mySymbol}` : `${friendName}'S TURN :- ${currentTurn}`;
+        function updateBoardUI() {
+            cells.forEach((c, i) => { 
+                c.innerText = board[i]; 
+                
+                // Keep existing classes, but refresh symbol classes
+                c.classList.remove('x', 'o');
+                if (board[i] !== "") {
+                    c.classList.add(board[i].toLowerCase());
+                }
+            });
+            
+            const turnInd = document.getElementById('turn-indicator');
+            if(!gameActive && board.every(x => x === "")) {
+                turnInd.innerText = isHost ? "CLICK NEW GAME" : "WAITING FOR HOST";
+            } else {
+                turnInd.innerText = currentTurn === mySymbol ? `YOUR TURN (${mySymbol})` : `OPPONENT'S TURN (${currentTurn})`;
             }
         }
 
         function checkWinner() {
-            const wins = [[0,1,2], [3,4,5], [6,7,8], [0,3,6], [1,4,7], [2,5,8], [0,4,8], [2,4,6]];
-            let won = false;
-            let winnerSymbol = "";
-            for (let [a,b,c] of wins) {
+            const wins = [
+                [0,1,2], [3,4,5], [6,7,8], // Rows
+                [0,3,6], [1,4,7], [2,5,8], // Columns
+                [0,4,8], [2,4,6]           // Diagonals
+            ];
+            
+            let winner = null;
+            let winningLine = null;
+            
+            for (let line of wins) {
+                const [a, b, c] = line;
                 if (board[a] && board[a] === board[b] && board[a] === board[c]) {
-                    won = true;
-                    winnerSymbol = board[a];
+                    winner = board[a];
+                    winningLine = line;
                     break;
                 }
             }
             
-            if (won) {
-                if (winnerSymbol === mySymbol) {
-                    turnInd.innerText = "YOU WON! 🎉";
-                    myWins++;
-                    soundWin.play().catch(()=>{});
-                } else {
-                    turnInd.innerText = "YOU LOST! 😢";
-                    friendWins++;
+            const turnInd = document.getElementById('turn-indicator');
+            
+            if (winner) {
+                // Highlight winning cells visually
+                if (winningLine) {
+                    winningLine.forEach(index => {
+                        cells[index].classList.add('winning-cell');
+                    });
                 }
-                updateScoreUI();
+                
+                if (winner === mySymbol) { 
+                    turnInd.innerText = "YOU WON! 🎉"; 
+                    myWins++; 
+                    soundWin.play().catch(()=>{}); 
+                } else { 
+                    turnInd.innerText = "YOU LOST! 😢"; 
+                    friendWins++; 
+                }
+                
+                updateScoreUI(); 
                 gameActive = false; 
             }
-            else if (!board.includes("")) { turnInd.innerText = "IT'S A DRAW!"; gameActive = false; }
+            else if (!board.includes("")) { 
+                turnInd.innerText = "IT'S A DRAW!"; 
+                gameActive = false; 
+            }
         }
 
         function requestNewGame() {
-            if (connection && connection.open) { connection.send({ type: 'new-game' }); resetBoard(); }
+            if (isHost && playersInRoom.length === 2) { 
+                const randomStarts = Math.random() < 0.5 ? "X" : "O";
+                broadcastToRoom({ type: 'new-game', turn: randomStarts }); 
+            }
+        }
+        
+        function updateScoreUI() { 
+            document.getElementById('ttt-my-score').innerText = myWins; 
+            document.getElementById('ttt-friend-score').innerText = friendWins; 
         }
 
-        function resetBoard() {
-            board = ["", "", "", "", "", "", "", "", ""]; gameActive = true; currentTurn = "X";
-            cells.forEach(c => { c.innerText = ""; c.className = "cell"; });
-            if (chatMode === 'P2P') {
-                turnInd.innerText = currentTurn === mySymbol ? `YOUR TURN :- ${mySymbol}` : `${friendName}'S TURN :- ${currentTurn}`;
+        // ==========================================
+        // LUDO DICE & MULTIPLAYER SYNC
+        // ==========================================
+        const diceFaces = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
+        let ludoTurnIdx = 0; // Indexes into the playersInRoom array
+
+        function renderLudoPlayers() {
+            const list = document.getElementById('ludo-players-list');
+            list.innerHTML = '';
+            
+            playersInRoom.forEach((p, idx) => {
+                const isMyTurn = (idx === ludoTurnIdx);
+                const borderStyle = isMyTurn ? 'border: 4px solid black; transform: scale(1.1); box-shadow: 0 0 10px rgba(0,0,0,0.5);' : '';
+                
+                list.innerHTML += `
+                    <div class="ludo-player-badge color-${p.color}" style="${borderStyle}">
+                        ${p.name}
+                    </div>
+                `;
+            });
+            
+            updateLudoTurnUI();
+        }
+
+        function rollLudoDice() {
+            if (playersInRoom.length === 0) return;
+            
+            const activePlayer = playersInRoom[ludoTurnIdx];
+            const myRoomId = isHost ? 'host' : peer.id;
+            
+            if (activePlayer.id !== myRoomId) {
+                return alert("It is not your turn!");
+            }
+            
+            const result = Math.floor(Math.random() * 6);
+            const rollData = { type: 'roll-dice', value: result, roller: myName };
+            
+            if(isHost) {
+                broadcastToRoom(rollData);
             } else {
-                turnInd.innerText = "WAITING...";
+                hostConnection.send(rollData);
+            }
+            
+            if(!isHost) {
+                receiveLudoDice(result, myName); // Optimistic UI
             }
         }
 
-        // ==========================================
-        // 🎲 LUDO LOGIC (Dice Syncing Base)
-        // ==========================================
-        let ludoTurn = "X";
-        const ludoInd = document.getElementById('ludo-turn-indicator');
-        const diceDisplay = document.getElementById('dice-display');
-        const diceFaces = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
-
-        function rollDice() {
-            if (chatMode !== 'P2P' || !connection || !connection.open) return alert("Wait for opponent!");
-            if (ludoTurn !== mySymbol) return alert("It is not your turn!");
+        function receiveLudoDice(value, roller) {
+            soundClick.play().catch(()=>{});
+            document.getElementById('dice-display').innerText = diceFaces[value];
             
-            soundClick.play().catch(()=>{});
-            const result = Math.floor(Math.random() * 6);
-            diceDisplay.innerText = diceFaces[result];
-            ludoTurn = currentTurn === "X" ? "O" : "X";
-            updateLudoTurnUI();
-
-            connection.send({ type: 'roll-dice', value: result });
-        }
-
-        function receiveDice(value) {
-            soundClick.play().catch(()=>{});
-            triggerNotification("Dice Rolled!", `${friendName} rolled a ${value + 1}`);
-            diceDisplay.innerText = diceFaces[value];
-            ludoTurn = mySymbol;
-            updateLudoTurnUI();
+            if(roller !== myName) {
+                triggerNotification("Dice Rolled", `${roller} rolled a ${value + 1}`);
+            }
+            
+            // Turn Logic: Advance turn if the roll is not a 6 (index 5)
+            if (value !== 5) { 
+                ludoTurnIdx = (ludoTurnIdx + 1) % playersInRoom.length;
+            }
+            
+            renderLudoPlayers();
         }
 
         function updateLudoTurnUI() {
-            ludoInd.innerText = ludoTurn === mySymbol ? `YOUR TURN TO ROLL` : `WAITING FOR ${friendName.toUpperCase()}`;
+            if(playersInRoom.length === 0) return;
+            
+            const activePlayer = playersInRoom[ludoTurnIdx];
+            const myRoomId = isHost ? 'host' : peer.id;
+            const isMe = activePlayer.id === myRoomId;
+            
+            document.getElementById('ludo-turn-indicator').innerText = isMe ? "YOUR TURN TO ROLL" : `WAITING FOR ${activePlayer.name.toUpperCase()}`;
+        }
+
+        // ==========================================
+        // CHAT SENDING & RENDERING
+        // ==========================================
+        function handleChatKeyPress(e) { 
+            if (e.key === 'Enter') sendMessage(); 
+        }
+        
+        function sendMessage() {
+            if (!validateName()) return;
+            
+            const input = document.getElementById('chat-input');
+            const msg = input.value.trim();
+            if (!msg) return;
+
+            if (chatMode === 'ROOM') {
+                const chatData = { type: 'chat', msg: msg, sender: myName };
+                roomChat.push({ sender: myName, msg: msg, isMine: true });
+                addMessageToUI(myName, msg, true);
+                
+                if(isHost) {
+                    broadcastToRoom(chatData, null); // broadcast to others
+                } else {
+                    hostConnection.send(chatData);
+                }
+            } 
+            else if (chatMode === 'GROUP' && currentGroupId) {
+                db.ref(`groups/${currentGroupId}/chat`).push({ sender: myName, msg: msg });
+            } 
+            else if (chatMode === 'GLOBAL') {
+                db.ref("global_chat").push({ sender: myName, msg: msg });
+            }
+            
+            input.value = '';
+        }
+        
+        function addMessageToUI(sender, msg, isMine) {
+            const container = document.createElement('div');
+            container.className = `msg-container ${isMine ? 'mine' : 'theirs'}`;
+            container.innerHTML = `
+                <div class="msg-name">${sender}</div>
+                <div class="msg-bubble">${msg}</div>
+            `;
+            document.getElementById('chat-messages').appendChild(container);
+            document.getElementById('chat-messages').scrollTop = document.getElementById('chat-messages').scrollHeight;
+        }
+        
+        function appendSystemMessage(msg) {
+            const div = document.createElement('div');
+            div.style.cssText = 'text-align:center; font-size:12px; color:gray; margin:5px 0; font-weight:bold;';
+            div.innerText = msg;
+            document.getElementById('chat-messages').appendChild(div);
+            document.getElementById('chat-messages').scrollTop = document.getElementById('chat-messages').scrollHeight;
+        }
+        
+        function renderChat() {
+            const cm = document.getElementById('chat-messages'); 
+            cm.innerHTML = "";
+            
+            let activeChat;
+            if (chatMode === 'ROOM') activeChat = roomChat;
+            else if (chatMode === 'GROUP') activeChat = groupChat;
+            else activeChat = globalChat;
+            
+            appendSystemMessage(`--- ${chatMode} CHAT ---`);
+            
+            activeChat.forEach(c => addMessageToUI(c.sender, c.msg, c.isMine));
         }
     </script>
 </body>
