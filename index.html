@@ -71,7 +71,7 @@
 
         /* VIEWS */
         .active-view { display: none; flex-direction: column; height: 100%; justify-content: space-between; }
-        .board-container { background-color: #4ade80; border: 6px solid black; border-radius: 30px; padding: 15px; flex-grow: 1; display: flex; flex-direction: column; align-items: center; overflow-y: auto; }
+        .board-container { background-color: #4ade80; border: 6px solid black; border-radius: 30px; padding: 15px; flex-grow: 1; display: flex; flex-direction: column; align-items: center; overflow-y: auto; overflow-x: hidden; }
         .header-info { width: 100%; color: white; font-weight: bold; margin-bottom: 10px; font-size: 14px; text-align: center; background: #1e692c; border: 3px solid black; padding: 5px; border-radius: 10px; }
         
         /* PRE-GAME ROOM LOBBY */
@@ -254,7 +254,6 @@
                 <div class="board-container">
                     <div class="header-info" style="margin-bottom: 5px;">ROOM: <span id="display-ludo-room"></span> | PASS: <span id="display-ludo-pass"></span></div>
                     
-                    <!-- Dynamic List of active players highlighted when it's their turn -->
                     <div id="ludo-active-players" class="ludo-players-list"></div>
 
                     <div id="status-log">Game Starting...</div>
@@ -399,13 +398,14 @@
             groupListeners.push({ ref: chatRef, event: 'child_added' }); renderChat();
         }
         
-        function enableAdminFeatures(adminKey) { /* Placeholder admin UI logic */ }
-        async function claimAdmin() { /* Placeholder claim admin */ }
+        function enableAdminFeatures(adminKey) { document.getElementById('admin-key-display').style.display = 'block'; document.getElementById('display-admin-key').innerText = adminKey; document.getElementById('admin-panel').style.display = 'block'; document.getElementById('claim-admin-section').style.display = 'none'; const memRef = db.ref(`groups/${currentGroupId}/members`); memRef.on('value', (snap) => { const members = snap.val() || {}, listHtml = document.getElementById('member-list'); listHtml.innerHTML = ''; Object.keys(members).forEach(mem => { if(mem !== myName) listHtml.innerHTML += `<div class="member-item"><span>${mem}</span><div style="display:flex; gap:4px;"><button class="kick-btn" onclick="kickMember('${mem}')">KICK</button><button class="ban-btn" onclick="banMember('${mem}')">BAN</button></div></div>`; }); }); groupListeners.push({ ref: memRef, event: 'value' }); const bannedRef = db.ref(`groups/${currentGroupId}/banned`); bannedRef.on('value', (snap) => { const banned = snap.val() || {}, bannedHtml = document.getElementById('banned-list'); bannedHtml.innerHTML = ''; Object.keys(banned).forEach(mem => { bannedHtml.innerHTML += `<div class="member-item banned-item"><span>🚫 ${mem}</span><button class="unban-btn" onclick="unbanMember('${mem}')">🔓 UNBAN</button></div>`; }); }); groupListeners.push({ ref: bannedRef, event: 'value' }); }
+        async function claimAdmin() { const keyInput = document.getElementById('admin-key-input').value.trim(), snap = await db.ref(`groups/${currentGroupId}/settings/adminKey`).once('value'); if(String(snap.val()) === String(keyInput)) { isGroupAdmin = true; alert("Success! You are now Admin."); enableAdminFeatures(keyInput); } else alert("Incorrect Admin Key!"); }
+        function kickMember(mem) { db.ref(`groups/${currentGroupId}/kicked/${mem}`).set(true); db.ref(`groups/${currentGroupId}/members/${mem}`).remove(); db.ref(`groups/${currentGroupId}/chat`).push({ sender: "System", msg: `${mem} was kicked.`}); }
+        function banMember(mem) { db.ref(`groups/${currentGroupId}/banned/${mem}`).set(true); db.ref(`groups/${currentGroupId}/members/${mem}`).remove(); db.ref(`groups/${currentGroupId}/chat`).push({ sender: "System", msg: `${mem} was banned.`}); }
+        function unbanMember(mem) { db.ref(`groups/${currentGroupId}/banned/${mem}`).remove(); db.ref(`groups/${currentGroupId}/chat`).push({ sender: "System", msg: `${mem} was unbanned.`}); }
+        
         async function quitGroup(wasRemoved = false) {
-            if (currentGroupId) {
-                groupListeners.forEach(listener => listener.ref.off(listener.event)); groupListeners = [];
-                if (!wasRemoved) { db.ref(`groups/${currentGroupId}/chat`).push({ sender: "System", msg: `${myName} left.` }); await db.ref(`groups/${currentGroupId}/members/${myName}`).remove(); }
-            }
+            if (currentGroupId) { groupListeners.forEach(listener => listener.ref.off(listener.event)); groupListeners = []; if (!wasRemoved) { db.ref(`groups/${currentGroupId}/chat`).push({ sender: "System", msg: `${myName} left.` }); await db.ref(`groups/${currentGroupId}/members/${myName}`).remove(); } }
             db.ref(`groups/${currentGroupId}/members/${myName}`).onDisconnect().cancel();
             currentGroupId = null; isGroupAdmin = false; chatMode = 'GLOBAL';
             document.getElementById('group-view').style.display = 'none'; document.getElementById('lobby-view').style.display = 'flex';
@@ -417,7 +417,7 @@
         // ==========================================
         let peer = null, hostConnection = null, clientConnections = [];
         let isHost = false, myRole = 'player', isReady = false; 
-        let roomPhase = 'lobby'; // 'lobby' or 'playing'
+        let roomPhase = 'lobby'; 
         let currentGame = "tictactoe", playersInRoom = []; 
         let currentRoomId = "", currentRoomPass = "";
         
@@ -469,7 +469,6 @@
                         playersInRoom.push(newPlayer);
                         clientConnections.push(conn); setupHostClientListener(conn);
                         
-                        // Send the full live state so late joiners can properly reconstruct
                         conn.send({ type: 'approve', game: currentGame, phase: roomPhase, players: playersInRoom, state: { board, currentTurn, ludoTurnIdx: ludoCurrentTurn, ludoPlayersState: ludoPlayers, activeLudoColors } });
                         broadcastToRoom({ type: 'lobby-update', players: playersInRoom, newPlayer: data.name });
                     }
@@ -504,8 +503,8 @@
                                 switchToGameView(); 
                                 if (currentGame === 'ludo') {
                                     ludoCurrentTurn = data.state.ludoTurnIdx; ludoPlayers = data.state.ludoPlayersState; activeLudoColors = data.state.activeLudoColors;
-                                    setupLudoMultiplayer(true); // true = late join, do not reset board
-                                } else { updateBoardUI(); document.getElementById('btn-ttt-new').style.display = 'none'; }
+                                    setupLudoMultiplayer(true); 
+                                } else { updateScoreUI(); document.getElementById('btn-ttt-new').style.display = 'none'; }
                             } else {
                                 switchToLobbyView(rid, rp); 
                             }
@@ -518,18 +517,16 @@
             peer.on('error', () => { alert("Could not connect! Room not found."); quitRoom(); });
         }
 
-        // Host ONLY routing logic
+        // Host ONLY routing logic - stops Double execution!
         function broadcastToRoom(data, excludeConn = null) {
             clientConnections.forEach(c => { if (c !== excludeConn && c.open) c.send(data); });
-            handleRoomMessage(data); // Host handles it too
+            handleRoomMessage(data); // Host handles it locally
         }
 
         function setupHostClientListener(conn) {
             conn.on('data', (data) => { 
-                // Don't bounce back to sender for most game logic
                 if (data.type === 'chat' || data.type === 'move' || data.type === 'ludo-roll' || data.type === 'ludo-move' || data.type === 'ludo-new') { 
                     broadcastToRoom(data, conn); 
-                    handleRoomMessage(data); 
                 } else if (data.type === 'toggle-ready') {
                     let p = playersInRoom.find(p => p.id === conn.peer);
                     if(p) { p.isReady = data.ready; broadcastToRoom({ type: 'lobby-update', players: playersInRoom }); }
@@ -540,12 +537,15 @@
                 if(disconnectedUser) {
                     clientConnections = clientConnections.filter(c => c !== conn); playersInRoom = playersInRoom.filter(p => p.id !== conn.peer);
                     broadcastToRoom({ type: 'lobby-update', players: playersInRoom, leftPlayer: disconnectedUser.name });
-                    if(roomPhase === 'playing' && currentGame === 'ludo') { activeLudoColors = activeLudoColors.filter(c => playersInRoom.filter(p=>p.role !== 'spectator').some(pl => pl.color === c)); renderLudoActivePlayers(); }
+                    if(roomPhase === 'playing' && currentGame === 'ludo') { 
+                        activeLudoColors = activeLudoColors.filter(c => playersInRoom.filter(p=>p.role !== 'spectator').some(pl => pl.color === c)); 
+                        renderLudoActivePlayers(); 
+                        if (activeLudoColors[ludoCurrentTurn] === disconnectedUser.color) advanceLudoTurnByHost(); // Skip quit player
+                    }
                 }
             });
         }
 
-        // Universal Room Message Handler
         function handleRoomMessage(data) {
             if (data.type === 'chat') {
                 const isMine = data.sender === myName;
@@ -556,14 +556,14 @@
                 if(data.newPlayer && data.newPlayer !== myName) appendSystemMessage(`${data.newPlayer} joined!`);
                 if(data.leftPlayer) appendSystemMessage(`${data.leftPlayer} left the room.`);
                 if(roomPhase === 'lobby') renderRoomLobby();
-                if(roomPhase === 'playing' && currentGame === 'tictactoe') updateScoreUI(); // refresh names
+                if(roomPhase === 'playing' && currentGame === 'tictactoe') updateScoreUI(); 
             } else if (data.type === 'start-game') {
                 roomPhase = 'playing'; switchToGameView();
                 if(currentGame === 'ludo') { setupLudoMultiplayer(false); } 
                 else {
                     board = ["", "", "", "", "", "", "", "", ""]; gameActive = true; currentTurn = data.turn; 
                     document.querySelectorAll('.cell').forEach(c => c.classList.remove('winning-cell'));
-                    updateBoardUI(); appendSystemMessage(`Game started! ${data.turn} goes first.`);
+                    updateScoreUI(); appendSystemMessage(`Game started! ${data.turn} goes first.`);
                 }
             } else if (data.type === 'return-lobby') {
                 roomPhase = 'lobby'; if(!isHost) isReady = false;
@@ -577,7 +577,9 @@
             } else if (data.type === 'ludo-turn-change') {
                 applyLudoTurnChange(data.turnIdx);
             } else if (data.type === 'ludo-sync') {
-                ludoPlayers = data.playersState; renderGotis(); // Fix desync
+                ludoPlayers = data.playersState; renderGotis(); 
+            } else if (data.type === 'ludo-new') {
+                setupLudoMultiplayer(false); appendSystemMessage(`New Ludo Game Started!`);
             }
         }
 
@@ -644,11 +646,12 @@
         function makeMove(index) {
             if (myRole === 'spectator') return alert("You are spectating!");
             if (!gameActive || board[index] !== "" || currentTurn !== mySymbol) return;
+            
             soundClick.play().catch(()=>{});
             const moveData = { type: 'move', index: index, symbol: mySymbol };
             
-            if(isHost) broadcastToRoom(moveData, null); else hostConnection.send(moveData); 
-            receiveTTTMove(index, mySymbol); // Local optimstic
+            if(isHost) broadcastToRoom(moveData); else hostConnection.send(moveData); 
+            // Network absolutely dictates state changes now. No duplicate local execution.
         }
 
         function receiveTTTMove(index, symbol) { board[index] = symbol; currentTurn = currentTurn === "X" ? "O" : "X"; updateBoardUI(); checkWinner(); }
@@ -686,7 +689,7 @@
             let p2 = playersInRoom.find(p => p.role === 'player');
             document.getElementById('ttt-p1-score').innerText = `${p1 ? p1.name : "P1"} (X): ${isHost ? myWins : friendWins}`; 
             document.getElementById('ttt-p2-score').innerText = `${p2 ? p2.name : "P2"} (O): ${isHost ? friendWins : myWins}`; 
-            updateBoardUI(); // refresh name in turn indicator
+            updateBoardUI(); 
         }
 
         // ==========================================
@@ -711,21 +714,26 @@
             document.getElementById('dice-result').innerText = '🎲';
             document.getElementById('btn-ludo-new').style.display = isHost ? 'block' : 'none';
 
-            initBoard(); hideUnusedLudoColors(); updateLudoTurnUI();
-            logStatus(isLateJoin ? `Spectating...` : `Game started! Waiting for ${activeLudoColors[0].toUpperCase()}`);
+            initBoard(); 
+            if(!isLateJoin) hideUnusedLudoColors(); 
+            updateLudoTurnUI();
+            logStatus(isLateJoin ? `Spectating Live Game...` : `Game started! Waiting for ${activeLudoColors[0].toUpperCase()}`);
         }
 
         function initBoard() {
             const board = document.getElementById('ludo-board'); board.innerHTML = ''; 
             for (let r = 0; r < 15; r++) { for (let c = 0; c < 15; c++) { let cell = document.createElement('div'); cell.className = 'ludo-cell'; cell.id = `cell-${r}-${c}`; cell.style.gridRow = r + 1; cell.style.gridColumn = c + 1; board.appendChild(cell); } }
-            drawBase('red'); drawBase('green'); drawBase('blue'); drawBase('yellow');
+            
+            // Reset opacity incase of previous hide
+            ['red', 'green', 'blue', 'yellow'].forEach(color => drawBase(color));
+            
             let center = document.createElement('div'); center.className = 'home-center'; center.innerText = '★'; board.appendChild(center);
             colorTrack(); initGotisDOM(); setTimeout(renderGotis, 100); 
         }
 
         function drawBase(color) {
             const board = document.getElementById('ludo-board');
-            let base = document.createElement('div'); base.className = `ludo-base ${color}`; base.id = `base-${color}`;
+            let base = document.createElement('div'); base.className = `ludo-base ${color}`; base.id = `base-${color}`; base.style.opacity = '1'; base.style.visibility = 'visible';
             let inner = document.createElement('div'); inner.className = 'base-inner';
             for(let i = 0; i < 4; i++) { let pocket = document.createElement('div'); pocket.className = 'pocket'; pocket.id = `pocket-${color}-${i}`; inner.appendChild(pocket); }
             base.appendChild(inner); board.appendChild(base);
@@ -752,7 +760,7 @@
         function initGotisDOM() {
             const board = document.getElementById('ludo-board');
             ['red', 'green', 'yellow', 'blue'].forEach(color => {
-                for(let i=0; i<4; i++) { let goti = document.createElement('div'); goti.className = `goti ${color}`; goti.id = `goti-${color}-${i}`; goti.onclick = () => handleGotiClick(color, i, ludoDiceValue, false); board.appendChild(goti); }
+                for(let i=0; i<4; i++) { let goti = document.createElement('div'); goti.className = `goti ${color}`; goti.id = `goti-${color}-${i}`; goti.style.opacity = '1'; goti.style.display = 'block'; goti.onclick = () => handleGotiClick(color, i, ludoDiceValue, false); board.appendChild(goti); }
             });
         }
 
@@ -800,9 +808,8 @@
             let result = Math.floor(Math.random() * 6) + 1;
             
             const rollData = { type: 'ludo-roll', value: result, roller: myName };
-            if (isHost) broadcastToRoom(rollData, null); else hostConnection.send(rollData);
-
-            executeLudoRoll(result, myName);
+            if (isHost) broadcastToRoom(rollData); else hostConnection.send(rollData);
+            // Network governs the animation
         }
 
         function executeLudoRoll(val, roller) {
@@ -858,7 +865,7 @@
             }
         }
 
-        // Exact steps passed so it physically cannot double step
+        // PERFECT SYNC: network strictly dictates movement.
         async function handleGotiClick(color, gotiIndex, steps, isFromNetwork = false) {
             if (myRole === 'spectator' && !isFromNetwork) return;
             if (!isFromNetwork && (!ludoHasRolled || color !== activeLudoColors[ludoCurrentTurn] || ludoIsAnimating)) return;
@@ -871,7 +878,8 @@
                 if (hasMultipleOptions && !gotiEl.classList.contains('movable')) return;
 
                 const moveData = { type: 'ludo-move', color: color, gotiIndex: gotiIndex, steps: steps };
-                if (isHost) broadcastToRoom(moveData, null); else hostConnection.send(moveData);
+                if (isHost) broadcastToRoom(moveData); else hostConnection.send(moveData);
+                return; // STOP EXECUTION! Wait for the network command to trigger the animation below.
             }
 
             ludoIsAnimating = true; document.querySelectorAll('.goti').forEach(g => g.classList.remove('movable'));
@@ -928,8 +936,7 @@
         function finalizeMove(color, extraTurn) {
             ludoIsAnimating = false;
             
-            // Host sends state sync just to ensure absolute perfection
-            if(isHost) broadcastToRoom({ type: 'ludo-sync', playersState: ludoPlayers });
+            if(isHost) broadcastToRoom({ type: 'ludo-sync', playersState: ludoPlayers }); // Hard state sync to fix drift
 
             if (ludoPlayers[color].gotis.every(p => p === 56)) {
                 let p = playersInRoom.find(pl => pl.color === color); let n = p ? p.name : color.toUpperCase();
@@ -951,7 +958,6 @@
         function advanceLudoTurnByHost() {
             let nextIdx = (ludoCurrentTurn + 1) % activeLudoColors.length;
             broadcastToRoom({ type: 'ludo-turn-change', turnIdx: nextIdx });
-            applyLudoTurnChange(nextIdx); // host local update
         }
 
         function applyLudoTurnChange(turnIdx) {
@@ -981,8 +987,10 @@
             const indicator = document.getElementById('turn-indicator');
             indicator.innerText = `Turn: ${n}`; indicator.style.color = `var(--${color})`; indicator.style.borderColor = `var(--${color})`;
             logStatus(`Waiting for ${n} to roll...`);
-            renderLudoActivePlayers(); // Highlight active
+            renderLudoActivePlayers(); 
         }
+
+        window.addEventListener('resize', () => { if(!ludoIsAnimating && chatMode === 'ROOM' && currentGame === 'ludo') renderGotis(); });
 
         // ==========================================
         // CHAT SENDING (Duplication Fixed)
@@ -996,10 +1004,10 @@
             if (chatMode === 'ROOM') {
                 const chatData = { type: 'chat', msg: msg, sender: myName };
                 if (isHost) {
-                    broadcastToRoom(chatData); // Routes to local handleRoomMessage AND clients perfectly
+                    broadcastToRoom(chatData); // Broadcast and route to host
                 } else {
                     hostConnection.send(chatData);
-                    roomChat.push({ sender: myName, msg: msg, isMine: true }); addMessageToUI(myName, msg, true); // Optimistic Client UI
+                    roomChat.push({ sender: myName, msg: msg, isMine: true }); addMessageToUI(myName, msg, true); // Optimistic UI
                 }
             } 
             else if (chatMode === 'GROUP' && currentGroupId) db.ref(`groups/${currentGroupId}/chat`).push({ sender: myName, msg: msg });
