@@ -3,557 +3,144 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat, Tic-Tac-Toe & Ludo Pro</title>
+    <title>Chat, Tic-Tac-Toe & Ultimate Premium Ludo</title>
     
-    <!-- Google AdSense Site Verification Meta Tag -->
     <meta name="google-adsense-account" content="ca-pub-6434181265093730">
-
-    <!-- Google AdSense Global Connection Script -->
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6434181265093730" crossorigin="anonymous"></script>
     
-    <!-- PeerJS for Private 1v1 Rooms -->
     <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.5/dist/peerjs.min.js"></script>
-    
-    <!-- Firebase for Global & Group Chat Sync -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <style>
-        * { 
-            box-sizing: border-box; 
-            margin: 0; 
-            padding: 0; 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-        }
-        
-        body { 
-            background-color: #f0f0f0; 
-            display: flex; 
-            flex-direction: column; 
-            justify-content: center; 
-            align-items: center; 
-            min-height: 100vh; 
-            gap: 15px; 
-            padding: 15px; 
-        }
-        
-        /* --- AD CONTAINERS --- */
-        .ad-container { 
-            width: 100%; 
-            max-width: 728px; 
-            min-height: 90px; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            background-color: #e5e5e5; 
-            border: 2px dashed #9ca3af; 
-            border-radius: 10px; 
-            overflow: hidden; 
-            text-align: center; 
-        }
-        
-        .ad-placeholder-text { 
-            color: #6b7280; 
-            font-size: 12px; 
-            font-weight: bold; 
-        }
-        
-        .main-app-wrapper { 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            gap: 20px; 
-            width: 100%; 
+        :root {
+            --red: #E53935;
+            --green: #43A047;
+            --yellow: #FDD835;
+            --blue: #1E88E5;
+            --cell-size: 19px; /* Scaled to fit 350px panel wrapper */
         }
 
-        /* --- CHAT PANEL (LEFT) --- */
-        .chat-panel { 
-            width: 320px; 
-            height: 600px; 
-            background-color: #aae0aa; 
-            border: 6px solid black; 
-            display: flex; 
-            flex-direction: column; 
-            position: relative; 
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #f0f0f0; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 100vh; gap: 15px; padding: 15px; }
         
-        .chat-header { 
-            background-color: #2b8a3e; 
-            border-bottom: 6px solid black; 
-            padding: 10px; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-        }
-        
-        .chat-header-text { 
-            background-color: white; 
-            border: 4px solid black; 
-            border-radius: 15px; 
-            padding: 2px 10px; 
-            font-weight: bold; 
-        }
-        
-        .chat-mode-badge { 
-            font-size: 12px; 
-            color: white; 
-            font-weight: bold; 
-            background-color: #1e692c; 
-            padding: 4px 8px; 
-            border-radius: 10px; 
-            border: 2px solid black; 
-        }
-        
-        .chat-messages { 
-            flex-grow: 1; 
-            padding: 15px; 
-            overflow-y: auto; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 15px; 
-        }
-        
-        .msg-container { 
-            display: flex; 
-            flex-direction: column; 
-            max-width: 85%; 
-        }
-        
-        .msg-container.mine { 
-            align-self: flex-end; 
-            align-items: flex-end; 
-            margin-left: auto; 
-        }
-        
-        .msg-container.theirs { 
-            align-self: flex-start; 
-            align-items: flex-start; 
-            margin-right: auto; 
-        }
-        
-        .msg-name { 
-            font-size: 11px; 
-            font-weight: bold; 
-            color: #1e692c; 
-            margin-bottom: 2px; 
-            padding: 0 5px; 
-        }
-        
-        .msg-bubble { 
-            background-color: white; 
-            border: 4px solid black; 
-            border-radius: 20px; 
-            padding: 8px 15px; 
-            word-wrap: break-word; 
-            font-weight: bold; 
-        }
-        
-        .msg-container.mine .msg-bubble { 
-            border-bottom-right-radius: 5px; 
-            background-color: #dcf8c6; 
-        }
-        
-        .msg-container.theirs .msg-bubble { 
-            border-top-left-radius: 5px; 
-            background-color: white; 
-        }
-        
-        .chat-input-area { 
-            padding: 10px; 
-            background-color: #aae0aa; 
-            border-top: 6px solid black; 
-        }
-        
-        .chat-input-box { 
-            display: flex; 
-            background-color: white; 
-            border: 4px solid black; 
-            border-radius: 5px; 
-            padding: 5px; 
-            align-items: center; 
-        }
-        
-        .chat-input-box input { 
-            border: none; 
-            outline: none; 
-            flex-grow: 1; 
-            font-weight: bold; 
-            width: 100%; 
-        }
-        
-        .send-btn { 
-            background-color: #2b8a3e; 
-            color: white; 
-            border: 3px solid black; 
-            border-radius: 5px; 
-            padding: 4px 10px; 
-            font-weight: bold; 
-            cursor: pointer; 
-            margin-left: 5px; 
-            font-size: 12px; 
-        }
-        
-        .send-btn:hover { 
-            background-color: #1e692c; 
-        }
+        .ad-container { width: 100%; max-width: 728px; min-height: 90px; display: flex; justify-content: center; align-items: center; background-color: #e5e5e5; border: 2px dashed #9ca3af; border-radius: 10px; overflow: hidden; text-align: center; }
+        .ad-placeholder-text { color: #6b7280; font-size: 12px; font-weight: bold; }
+        .main-app-wrapper { display: flex; justify-content: center; align-items: center; gap: 20px; width: 100%; }
 
-        /* --- RIGHT PANEL & LOBBY --- */
-        .right-panel { 
-            width: 350px; 
-            height: 600px; 
-            display: flex; 
-            flex-direction: column; 
-            justify-content: space-between; 
-        }
-        
-        .lobby-view { 
-            display: flex; 
-            flex-direction: column; 
-            justify-content: space-between; 
-            height: 100%; 
-        }
-        
-        .login-box { 
-            background-color: #72c472; 
-            border: 6px solid black; 
-            border-radius: 40px; 
-            padding: 20px; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 15px; 
-            overflow: hidden; 
-        }
-        
-        .toggle-container { 
-            display: flex; 
-            background: #1e692c; 
-            border: 4px solid black; 
-            border-radius: 20px; 
-            position: relative; 
-            margin-bottom: 10px; 
-        }
-        
-        .toggle-btn { 
-            flex: 1; 
-            padding: 8px; 
-            text-align: center; 
-            font-weight: bold; 
-            color: white; 
-            cursor: pointer; 
-            z-index: 2; 
-            font-size: 14px; 
-        }
-        
-        .toggle-slider { 
-            position: absolute; 
-            top: 0; 
-            left: 0; 
-            width: 50%; 
-            height: 100%; 
-            background: #4ade80; 
-            border-radius: 15px; 
-            transition: 0.3s ease; 
-            z-index: 1; 
-            border: 2px solid black; 
-        }
-        
-        .sliding-sections { 
-            display: flex; 
-            width: 200%; 
-            transition: transform 0.4s ease-in-out; 
-        }
-        
-        .section { 
-            width: 50%; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 15px; 
-            padding: 0 5px; 
-        }
+        /* CHAT PANEL */
+        .chat-panel { width: 320px; height: 600px; background-color: #aae0aa; border: 6px solid black; display: flex; flex-direction: column; position: relative; }
+        .chat-header { background-color: #2b8a3e; border-bottom: 6px solid black; padding: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .chat-header-text { background-color: white; border: 4px solid black; border-radius: 15px; padding: 2px 10px; font-weight: bold; }
+        .chat-mode-badge { font-size: 12px; color: white; font-weight: bold; background-color: #1e692c; padding: 4px 8px; border-radius: 10px; border: 2px solid black; }
+        .chat-messages { flex-grow: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+        .msg-container { display: flex; flex-direction: column; max-width: 85%; }
+        .msg-container.mine { align-self: flex-end; align-items: flex-end; margin-left: auto; }
+        .msg-container.theirs { align-self: flex-start; align-items: flex-start; margin-right: auto; }
+        .msg-name { font-size: 11px; font-weight: bold; color: #1e692c; margin-bottom: 2px; padding: 0 5px; }
+        .msg-bubble { background-color: white; border: 4px solid black; border-radius: 20px; padding: 8px 15px; word-wrap: break-word; font-weight: bold; }
+        .msg-container.mine .msg-bubble { border-bottom-right-radius: 5px; background-color: #dcf8c6; }
+        .msg-container.theirs .msg-bubble { border-top-left-radius: 5px; background-color: white; }
+        .chat-input-area { padding: 10px; background-color: #aae0aa; border-top: 6px solid black; }
+        .chat-input-box { display: flex; background-color: white; border: 4px solid black; border-radius: 5px; padding: 5px; align-items: center; }
+        .chat-input-box input { border: none; outline: none; flex-grow: 1; font-weight: bold; width: 100%; }
+        .send-btn { background-color: #2b8a3e; color: white; border: 3px solid black; border-radius: 5px; padding: 4px 10px; font-weight: bold; cursor: pointer; margin-left: 5px; font-size: 12px; }
+        .send-btn:hover { background-color: #1e692c; }
 
-        .input-line { 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            width: 100%; 
-        }
+        /* RIGHT PANEL & LOBBY */
+        .right-panel { width: 350px; height: 600px; display: flex; flex-direction: column; justify-content: space-between; position: relative;}
+        .lobby-view { display: flex; flex-direction: column; justify-content: space-between; height: 100%; }
+        .login-box { background-color: #72c472; border: 6px solid black; border-radius: 40px; padding: 20px; display: flex; flex-direction: column; gap: 15px; overflow: hidden; }
         
-        .input-line input, .input-line select { 
-            background: transparent; 
-            border: none; 
-            border-bottom: 4px solid black; 
-            outline: none; 
-            text-align: center; 
-            font-size: 18px; 
-            font-weight: bold; 
-            color: white; 
-            width: 90%; 
-            padding: 5px; 
-        }
-        
-        .input-line select { 
-            background-color: #1e692c; 
-            border: 4px solid black; 
-            border-radius: 10px; 
-            margin-bottom: 5px; 
-            cursor: pointer; 
-        }
-        
-        .input-line input::placeholder { 
-            color: rgba(255,255,255,0.7); 
-        }
+        .toggle-container { display: flex; background: #1e692c; border: 4px solid black; border-radius: 20px; position: relative; margin-bottom: 10px; }
+        .toggle-btn { flex: 1; padding: 8px; text-align: center; font-weight: bold; color: white; cursor: pointer; z-index: 2; font-size: 14px; }
+        .toggle-slider { position: absolute; top: 0; left: 0; width: 50%; height: 100%; background: #4ade80; border-radius: 15px; transition: 0.3s ease; z-index: 1; border: 2px solid black; }
+        .sliding-sections { display: flex; width: 200%; transition: transform 0.4s ease-in-out; }
+        .section { width: 50%; display: flex; flex-direction: column; gap: 15px; padding: 0 5px; }
 
-        .action-button { 
-            background-color: #2b8a3e; 
-            border: 6px solid black; 
-            border-radius: 20px; 
-            padding: 10px; 
-            text-align: center; 
-            color: white; 
-            font-weight: bold; 
-            font-size: 16px; 
-            cursor: pointer; 
-        }
-        
-        .action-button:hover { 
-            background-color: #1e692c; 
-        }
-        
-        .btn-quit { 
-            background-color: #dc2626; 
-            margin-top: 5px;
-        }
-        
-        .btn-quit:hover { 
-            background-color: #991b1b; 
-        }
+        .input-line { display: flex; flex-direction: column; align-items: center; width: 100%; }
+        .input-line input, .input-line select { background: transparent; border: none; border-bottom: 4px solid black; outline: none; text-align: center; font-size: 18px; font-weight: bold; color: white; width: 90%; padding: 5px; }
+        .input-line select { background-color: #1e692c; border: 4px solid black; border-radius: 10px; margin-bottom: 5px; cursor: pointer; }
+        .input-line input::placeholder { color: rgba(255,255,255,0.7); }
 
-        /* --- ACTIVE VIEWS & BOARDS --- */
-        .active-view { 
-            display: none; 
-            flex-direction: column; 
-            height: 100%; 
-            justify-content: space-between; 
-        }
-        
-        .board-container { 
-            background-color: #4ade80; 
-            border: 6px solid black; 
-            border-radius: 30px; 
-            padding: 15px; 
-            flex-grow: 1; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            overflow-y: auto; 
-        }
-        
-        .header-info { 
-            width: 100%; 
-            color: white; 
-            font-weight: bold; 
-            margin-bottom: 10px; 
-            font-size: 14px; 
-            text-align: center; 
-            background: #1e692c; 
-            border: 3px solid black; 
-            padding: 5px; 
-            border-radius: 10px; 
-        }
-        
-        /* --- TIC TAC TOE STYLES --- */
-        .scoreboard { 
-            display: flex; 
-            justify-content: space-between; 
-            width: 100%; 
-            background: white; 
-            border: 4px solid black; 
-            border-radius: 10px; 
-            padding: 5px 15px; 
-            font-weight: bold; 
-            margin-bottom: 10px; 
-        }
-        
-        .turn-indicator { 
-            font-weight: bold; 
-            font-size: 18px; 
-            margin: 5px 0 10px 0; 
-            text-align: center; 
-        }
-        
-        .tic-tac-toe { 
-            display: grid; 
-            grid-template-columns: repeat(3, 70px); 
-            grid-template-rows: repeat(3, 70px); 
-            background-color: black; 
-            gap: 4px; 
-            border: 4px solid black; 
-        }
-        
-        .cell { 
-            background-color: #4ade80; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            font-size: 50px; 
-            font-weight: bold; 
-            cursor: pointer; 
-            user-select: none; 
-            transition: background-color 0.2s;
-        }
-        
-        .cell.x { color: red; }
-        .cell.o { color: #0ea5e9; }
-        .cell.winning-cell { background-color: #fef08a; } /* Highlight for the winning line */
-        
-        /* --- LUDO STYLES --- */
-        .ludo-area { 
-            background-color: white; 
-            border: 4px solid black; 
-            border-radius: 10px; 
-            width: 100%; 
-            flex-grow: 1; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center; 
-            padding: 10px; 
-            position: relative; 
-        }
-        
-        .dice-display { 
-            font-size: 60px; 
-            margin: 10px 0; 
-            cursor: pointer; 
-            user-select: none; 
-            transition: transform 0.2s; 
-        }
-        
-        .dice-display:active { 
-            transform: scale(0.9); 
-        }
-        
-        .ludo-players { 
-            display: flex; 
-            gap: 10px; 
-            flex-wrap: wrap; 
-            justify-content: center; 
-            margin-top: 10px; 
-        }
-        
-        .ludo-player-badge { 
-            padding: 5px 10px; 
-            border: 2px solid black; 
-            border-radius: 10px; 
-            font-weight: bold; 
-            font-size: 12px; 
-            color: white; 
-        }
-        
-        .color-red { background: #ef4444; } 
-        .color-green { background: #22c55e; } 
-        .color-yellow { background: #eab308; color: black; } 
-        .color-blue { background: #3b82f6; }
+        .action-button { background-color: #2b8a3e; border: 6px solid black; border-radius: 20px; padding: 10px; text-align: center; color: white; font-weight: bold; font-size: 16px; cursor: pointer; }
+        .action-button:hover { background-color: #1e692c; }
+        .btn-quit { background-color: #dc2626; margin-top: 5px;}
+        .btn-quit:hover { background-color: #991b1b; }
 
-        /* --- GROUP ADMIN STYLES --- */
-        .admin-panel { 
-            display: none; 
-            width: 100%; 
-            margin-top: 10px; 
-            background: white; 
-            border: 4px solid black; 
-            border-radius: 10px; 
-            padding: 10px; 
-        }
+        /* VIEWS */
+        .active-view { display: none; flex-direction: column; height: 100%; justify-content: space-between; }
+        .board-container { background-color: #4ade80; border: 6px solid black; border-radius: 30px; padding: 15px; flex-grow: 1; display: flex; flex-direction: column; align-items: center; overflow-y: auto; }
+        .header-info { width: 100%; color: white; font-weight: bold; margin-bottom: 10px; font-size: 14px; text-align: center; background: #1e692c; border: 3px solid black; padding: 5px; border-radius: 10px; }
         
-        .admin-panel h4 { 
-            text-align: center; 
-            margin-bottom: 8px; 
-            font-size: 14px; 
-        }
+        /* TIC TAC TOE */
+        .scoreboard { display: flex; justify-content: space-between; width: 100%; background: white; border: 4px solid black; border-radius: 10px; padding: 5px 15px; font-weight: bold; margin-bottom: 10px; }
+        .turn-indicator-ttt { font-weight: bold; font-size: 16px; margin: 5px 0 10px 0; text-align: center; }
+        .tic-tac-toe { display: grid; grid-template-columns: repeat(3, 70px); grid-template-rows: repeat(3, 70px); background-color: black; gap: 4px; border: 4px solid black; }
+        .cell { background-color: #4ade80; display: flex; justify-content: center; align-items: center; font-size: 50px; font-weight: bold; cursor: pointer; user-select: none; transition: background-color 0.2s; }
+        .cell.x { color: red; } .cell.o { color: #0ea5e9; } .cell.winning-cell { background-color: #fef08a; } 
         
-        .admin-section-title { 
-            font-size: 11px; 
-            font-weight: bold; 
-            color: #1e692c; 
-            margin: 8px 0 4px 0; 
-            text-transform: uppercase; 
-        }
+        /* ULTIMATE LUDO (NEW CSS) */
+        #status-log { width: 100%; text-align: center; font-size: 0.9rem; font-weight: bold; padding: 5px; margin-bottom: 10px; background: #34495e; color: white; border-radius: 8px; min-height: 24px; border: 2px solid black;}
+        #ludo-board { display: grid; grid-template-columns: repeat(15, var(--cell-size)); grid-template-rows: repeat(15, var(--cell-size)); background: #333; gap: 1px; border: 4px solid #333; margin-bottom: 10px; position: relative; }
         
-        .member-list { 
-            display: flex; 
-            flex-direction: column; 
-            gap: 5px; 
-            max-height: 120px; 
-            overflow-y: auto; 
-        }
-        
-        .member-item { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            background: #f0f0f0; 
-            padding: 5px; 
-            border: 2px solid black; 
-            border-radius: 5px; 
-            font-size: 12px; 
-            font-weight: bold; 
-        }
-        
-        .member-item.banned-item { 
-            background: #fee2e2; 
-            border-color: #dc2626; 
-        }
-        
-        .kick-btn, .ban-btn, .unban-btn { 
-            border: 2px solid black; 
-            border-radius: 5px; 
-            padding: 2px 5px; 
-            cursor: pointer; 
-            font-size: 10px; 
-            font-weight: bold; 
-            color: white; 
-        }
-        
-        .kick-btn { background: #f59e0b; color: black; } 
-        .ban-btn { background: #dc2626; } 
-        .unban-btn { background: #16a34a; }
+        .ludo-cell { background: white; width: var(--cell-size); height: var(--cell-size); display: flex; justify-content: center; align-items: center; position: relative; }
+        .ludo-safe { font-size: 0.9rem; }
+        .ludo-safe::before { content: '★'; color: #b0bec5; position: absolute; z-index: 1;}
+        .red-cell { background-color: #ffcdd2; } .green-cell { background-color: #c8e6c9; } .blue-cell { background-color: #bbdefb; } .yellow-cell { background-color: #fff9c4; }
 
-        .name-display { 
-            background-color: #2b8a3e; 
-            border: 6px solid black; 
-            border-radius: 20px; 
-            padding: 10px; 
-            text-align: center; 
-            color: white; 
-            font-weight: bold; 
-            font-size: 18px; 
-            margin-top: 5px; 
-        }
+        .ludo-base { display: flex; justify-content: center; align-items: center; z-index: 2; }
+        .ludo-base.red { grid-column: 1/7; grid-row: 1/7; background: var(--red); }
+        .ludo-base.green { grid-column: 10/16; grid-row: 1/7; background: var(--green); }
+        .ludo-base.blue { grid-column: 1/7; grid-row: 10/16; background: var(--blue); }
+        .ludo-base.yellow { grid-column: 10/16; grid-row: 10/16; background: var(--yellow); }
+        
+        .home-center { grid-column: 7/10; grid-row: 7/10; background: #2c3e50; z-index: 2; display: flex; justify-content: center; align-items: center; color: white; font-size: 1.5rem; }
+        .base-inner { width: 70%; height: 70%; background: white; border-radius: 10px; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 5px; padding: 5px; }
+        .pocket { background: #eee; border-radius: 50%; display: flex; justify-content: center; align-items: center; }
 
-        @media (max-width: 750px) { 
-            .main-app-wrapper { flex-direction: column; } 
-            .chat-panel, .right-panel { width: 100%; max-width: 350px; } 
-        }
+        .goti { width: 12px; height: 12px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.6); cursor: pointer; z-index: 10; position: absolute; transition: left 0.3s ease, top 0.3s ease, transform 0.2s ease; }
+        .goti.red { background: var(--red); } .goti.green { background: var(--green); } .goti.blue { background: var(--blue); } .goti.yellow { background: var(--yellow); }
+        .goti.moving { transform: scale(1.4) translateY(-3px) !important; z-index: 50 !important; box-shadow: 0 5px 10px rgba(0,0,0,0.6); }
+
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0px rgba(255, 255, 255, 0.7); } 70% { box-shadow: 0 0 0 8px rgba(255, 255, 255, 0); } 100% { box-shadow: 0 0 0 0px rgba(255, 255, 255, 0); } }
+        .goti.movable { border: 2px solid #fff; animation: pulse 1s infinite; z-index: 15; }
+        .goti.movable:hover { transform: scale(1.3) !important; z-index: 20; }
+
+        .ludo-controls { display: flex; align-items: center; gap: 10px; width: 100%; justify-content: center; background: white; padding: 5px; border-radius: 10px; border: 4px solid black;}
+        #turn-indicator { font-size: 0.9rem; font-weight: bold; padding: 5px; border-radius: 5px; background: #fff; border: 2px solid #ccc; text-transform: uppercase; }
+        #dice-btn { padding: 8px 15px; font-size: 1rem; font-weight: bold; cursor: pointer; background: #2c3e50; color: white; border: none; border-radius: 8px; }
+        #dice-btn:hover:not(:disabled) { background: #34495e; } #dice-btn:disabled { background: #95a5a6; cursor: not-allowed; }
+        #dice-result { font-size: 1.5rem; width: 40px; height: 40px; background: white; border: 2px solid #ccc; display: flex; justify-content: center; align-items: center; border-radius: 8px; font-weight: bold; }
+
+        /* WIN SCREEN OVERLAY */
+        #win-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; visibility: hidden; opacity: 0; transition: opacity 0.5s ease; border-radius: 30px;}
+        #win-screen.show { visibility: visible; opacity: 1; }
+        #win-text { font-size: 2rem; font-weight: bold; margin-bottom: 20px; text-transform: uppercase; text-align: center; text-shadow: 0px 5px 15px rgba(0,0,0,0.8); }
+        .play-again-btn { padding: 10px 20px; font-size: 1rem; font-weight: bold; cursor: pointer; background: #fff; color: #333; border: 2px solid black; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); transition: transform 0.2s; }
+        .play-again-btn:hover { transform: scale(1.1); }
+
+        /* GROUP ADMIN */
+        .admin-panel { display: none; width: 100%; margin-top: 10px; background: white; border: 4px solid black; border-radius: 10px; padding: 10px; }
+        .admin-panel h4 { text-align: center; margin-bottom: 8px; font-size: 14px; }
+        .admin-section-title { font-size: 11px; font-weight: bold; color: #1e692c; margin: 8px 0 4px 0; text-transform: uppercase; }
+        .member-list { display: flex; flex-direction: column; gap: 5px; max-height: 120px; overflow-y: auto; }
+        .member-item { display: flex; justify-content: space-between; align-items: center; background: #f0f0f0; padding: 5px; border: 2px solid black; border-radius: 5px; font-size: 12px; font-weight: bold; }
+        .member-item.banned-item { background: #fee2e2; border-color: #dc2626; }
+        .kick-btn, .ban-btn, .unban-btn { border: 2px solid black; border-radius: 5px; padding: 2px 5px; cursor: pointer; font-size: 10px; font-weight: bold; color: white; }
+        .kick-btn { background: #f59e0b; color: black; } .ban-btn { background: #dc2626; } .unban-btn { background: #16a34a; }
+
+        @media (max-width: 750px) { .main-app-wrapper { flex-direction: column; } .chat-panel, .right-panel { width: 100%; max-width: 350px; } }
     </style>
 </head>
 <body>
 
-    <!-- TOP AD BANNER -->
-    <div class="ad-container">
-        <span class="ad-placeholder-text">Advertisement</span>
-        <ins class="adsbygoogle" 
-             style="display:block; width: 100%; height: 100%;" 
-             data-ad-client="ca-pub-6434181265093730" 
-             data-ad-slot="5314933632" 
-             data-ad-format="auto" 
-             data-full-width-responsive="true"></ins>
+    <div class="ad-container"><span class="ad-placeholder-text">Advertisement</span>
+        <ins class="adsbygoogle" style="display:block; width: 100%; height: 100%;" data-ad-client="ca-pub-6434181265093730" data-ad-slot="5314933632" data-ad-format="auto" data-full-width-responsive="true"></ins>
         <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
     </div>
 
-    <!-- MAIN APP WRAPPER -->
     <div class="main-app-wrapper">
-        
         <!-- CHAT PANEL -->
         <div class="chat-panel">
             <div class="chat-header">
@@ -572,20 +159,14 @@
 
         <!-- RIGHT PANEL -->
         <div class="right-panel">
-            
-            <!-- LOBBY -->
             <div class="lobby-view" id="lobby-view">
                 <div class="login-box">
-                    
                     <div class="toggle-container">
                         <div class="toggle-slider" id="slider"></div>
                         <div class="toggle-btn" onclick="slideLobby(0)">Room Game</div>
                         <div class="toggle-btn" onclick="slideLobby(1)">Group Chat</div>
                     </div>
-
                     <div class="sliding-sections" id="sliding-sections">
-                        
-                        <!-- SECTION 1: GAMES -->
                         <div class="section">
                             <div class="input-line">
                                 <select id="game-select" onchange="toggleLudoColor()">
@@ -593,7 +174,6 @@
                                     <option value="ludo">Ludo</option>
                                 </select>
                             </div>
-                            
                             <div class="input-line" id="ludo-color-picker" style="display:none;">
                                 <select id="my-ludo-color">
                                     <option value="red">Red Team</option>
@@ -602,26 +182,19 @@
                                     <option value="blue">Blue Team</option>
                                 </select>
                             </div>
-                            
                             <div class="input-line"><input type="text" id="room-name" placeholder="room id"></div>
                             <div class="input-line"><input type="password" id="room-pass" placeholder="password"></div>
-                            
                             <div class="action-button" onclick="createRoom()">CREATE ROOM</div>
                             <div class="action-button" onclick="joinRoom()">JOIN ROOM</div>
                         </div>
-
-                        <!-- SECTION 2: GROUP CHAT -->
                         <div class="section">
                             <div class="input-line"><input type="text" id="group-name" placeholder="group id"></div>
                             <div class="input-line"><input type="password" id="group-pass" placeholder="group pass"></div>
-                            
                             <div class="action-button" style="background:#0ea5e9" onclick="createGroup()">CREATE GROUP</div>
                             <div class="action-button" style="background:#0284c7" onclick="joinGroup()">JOIN GROUP</div>
                         </div>
-                        
                     </div>
                 </div>
-                
                 <div>
                     <div class="input-line" style="background-color: #2b8a3e; border: 6px solid black; border-radius: 30px; padding: 15px;">
                         <input type="text" id="your-name" placeholder="your name (required)">
@@ -632,49 +205,38 @@
             <!-- TIC-TAC-TOE VIEW -->
             <div class="active-view" id="tictactoe-view">
                 <div class="board-container">
-                    <div class="header-info">
-                        ROOM: <span id="display-ttt-room"></span> | PASS: <span id="display-ttt-pass"></span>
-                    </div>
-                    
-                    <div class="scoreboard">
-                        <div>You: <span id="ttt-my-score">0</span></div>
-                        <div>Opponent: <span id="ttt-friend-score">0</span></div>
-                    </div>
-                    
-                    <div class="turn-indicator" id="turn-indicator">WAITING...</div>
-                    
+                    <div class="header-info">ROOM: <span id="display-ttt-room"></span> | PASS: <span id="display-ttt-pass"></span></div>
+                    <div class="scoreboard"><div>You: <span id="ttt-my-score">0</span></div><div>Opponent: <span id="ttt-friend-score">0</span></div></div>
+                    <div class="turn-indicator-ttt" id="turn-indicator-ttt">WAITING...</div>
                     <div class="tic-tac-toe" id="board">
-                        <div class="cell" onclick="makeMove(0)"></div>
-                        <div class="cell" onclick="makeMove(1)"></div>
-                        <div class="cell" onclick="makeMove(2)"></div>
-                        <div class="cell" onclick="makeMove(3)"></div>
-                        <div class="cell" onclick="makeMove(4)"></div>
-                        <div class="cell" onclick="makeMove(5)"></div>
-                        <div class="cell" onclick="makeMove(6)"></div>
-                        <div class="cell" onclick="makeMove(7)"></div>
-                        <div class="cell" onclick="makeMove(8)"></div>
+                        <div class="cell" onclick="makeMove(0)"></div><div class="cell" onclick="makeMove(1)"></div><div class="cell" onclick="makeMove(2)"></div>
+                        <div class="cell" onclick="makeMove(3)"></div><div class="cell" onclick="makeMove(4)"></div><div class="cell" onclick="makeMove(5)"></div>
+                        <div class="cell" onclick="makeMove(6)"></div><div class="cell" onclick="makeMove(7)"></div><div class="cell" onclick="makeMove(8)"></div>
                     </div>
                 </div>
-                <div class="action-button" id="btn-ttt-new" onclick="requestNewGame()">NEW GAME</div>
+                <div class="action-button" id="btn-ttt-new" style="display:none;" onclick="requestNewTTTGame()">NEW GAME</div>
                 <div class="action-button btn-quit" onclick="quitRoom()">QUIT ROOM</div>
             </div>
 
-            <!-- LUDO VIEW -->
+            <!-- ULTIMATE LUDO VIEW -->
             <div class="active-view" id="ludo-view">
                 <div class="board-container">
-                    <div class="header-info">
-                        LUDO ROOM: <span id="display-ludo-room"></span> | PASS: <span id="display-ludo-pass"></span>
+                    <div class="header-info" style="margin-bottom: 5px;">ROOM: <span id="display-ludo-room"></span> | PASS: <span id="display-ludo-pass"></span></div>
+                    
+                    <div id="status-log">Waiting for players...</div>
+                    <div id="ludo-board"></div>
+
+                    <div class="ludo-controls">
+                        <div id="turn-indicator">Turn: RED</div>
+                        <div id="dice-result">🎲</div>
+                        <button id="dice-btn" onclick="rollLudoDice()">Roll Dice</button>
                     </div>
-                    
-                    <div class="turn-indicator" id="ludo-turn-indicator">WAITING FOR PLAYERS...</div>
-                    
-                    <div class="ludo-area">
-                        <div class="dice-display" id="dice-display" onclick="rollLudoDice()">🎲</div>
-                        <h4 style="color: #2b8a3e; margin-top:5px;">Tap Dice to Roll</h4>
-                        
-                        <div class="ludo-players" id="ludo-players-list">
-                            <!-- Populated by JS -->
-                        </div>
+
+                    <!-- WIN SCREEN OVERLAY (inside board-container) -->
+                    <div id="win-screen">
+                        <div id="win-text">GREAT RED WON!</div>
+                        <button class="play-again-btn" id="btn-ludo-new" style="display:none; margin-bottom: 10px;" onclick="requestNewLudoGame()">Play Again</button>
+                        <button class="play-again-btn" style="background: #dc2626; color: white;" onclick="quitRoom()">Quit Room</button>
                     </div>
                 </div>
                 <div class="action-button btn-quit" onclick="quitRoom()">QUIT ROOM</div>
@@ -683,47 +245,30 @@
             <!-- GROUP CHAT VIEW -->
             <div class="active-view" id="group-view">
                 <div class="board-container">
-                    <div class="header-info">
-                        GROUP ID: <span id="display-group-id"></span><br>
-                        PASS: <span id="display-group-pass"></span>
-                        <div id="admin-key-display" style="display:none; color: #fbbf24; font-size: 12px; margin-top: 5px;">
-                            ADMIN KEY: <span id="display-admin-key"></span>
-                        </div>
+                    <div class="header-info">GROUP ID: <span id="display-group-id"></span><br>PASS: <span id="display-group-pass"></span>
+                        <div id="admin-key-display" style="display:none; color: #fbbf24; font-size: 12px; margin-top: 5px;">ADMIN KEY: <span id="display-admin-key"></span></div>
                     </div>
-                    
                     <h3 style="margin-top:10px;">GROUP ACTIVE</h3>
                     <p style="font-size:12px; text-align:center; margin-bottom:10px;">Chat is linked to the left panel.</p>
-                    
                     <div class="admin-panel" id="admin-panel">
                         <h4>👑 Admin Controls</h4>
-                        
                         <div class="admin-section-title">Active Members</div>
                         <div class="member-list" id="member-list"></div>
-                        
                         <div class="admin-section-title">Banned Players</div>
                         <div class="member-list" id="banned-list"></div>
                     </div>
                 </div>
-                
                 <div id="claim-admin-section" style="display: none; flex-direction: column; gap: 5px; margin-top: 10px; margin-bottom: 5px;">
                     <input type="text" id="admin-key-input" placeholder="enter admin key" style="text-align:center; padding:8px; border:3px solid black; border-radius:15px; font-weight:bold; font-size:14px; outline:none;">
                     <div class="action-button" style="background:#fbbf24; color:black; font-size:14px; padding:8px;" onclick="claimAdmin()">CLAIM ADMIN</div>
                 </div>
-                
                 <div class="action-button btn-quit" onclick="quitGroup()">QUIT GROUP</div>
             </div>
         </div>
     </div> 
 
-    <!-- BOTTOM AD BANNER -->
-    <div class="ad-container">
-        <span class="ad-placeholder-text">Advertisement</span>
-        <ins class="adsbygoogle" 
-             style="display:block; width: 100%; height: 100%;" 
-             data-ad-client="ca-pub-6434181265093730" 
-             data-ad-slot="5314933632" 
-             data-ad-format="auto" 
-             data-full-width-responsive="true"></ins>
+    <div class="ad-container"><span class="ad-placeholder-text">Advertisement</span>
+        <ins class="adsbygoogle" style="display:block; width: 100%; height: 100%;" data-ad-client="ca-pub-6434181265093730" data-ad-slot="5314933632" data-ad-format="auto" data-full-width-responsive="true"></ins>
         <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
     </div>
 
@@ -734,459 +279,198 @@
         const soundClick = new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3');
         const soundWin = new Audio('https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3');
         const soundMsg = new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3');
-        
-        if (Notification.permission !== "granted" && Notification.permission !== "denied") {
-            Notification.requestPermission();
-        }
-        
-        function triggerNotification(title, body) { 
-            if (Notification.permission === 'granted' && document.hidden) {
-                new Notification(title, { body: body }); 
-            }
-        }
+        if (Notification.permission !== "granted" && Notification.permission !== "denied") Notification.requestPermission();
+        function triggerNotification(title, body) { if (Notification.permission === 'granted' && document.hidden) new Notification(title, { body: body }); }
 
         // ==========================================
         // FIREBASE SETUP
         // ==========================================
-        const firebaseConfig = { 
-            apiKey: "AIzaSyDaFggwGKQJswcouN6l4LCTV6uapi4ivaQ", 
-            authDomain: "whatshapp-94037.firebaseapp.com", 
-            databaseURL: "https://whatshapp-94037-default-rtdb.firebaseio.com", 
-            projectId: "whatshapp-94037" 
-        };
-        
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
+        const firebaseConfig = { apiKey: "AIzaSyDaFggwGKQJswcouN6l4LCTV6uapi4ivaQ", authDomain: "whatshapp-94037.firebaseapp.com", databaseURL: "https://whatshapp-94037-default-rtdb.firebaseio.com", projectId: "whatshapp-94037" };
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        let chatMode = 'GLOBAL';
-        let myName = "Player";
-        let globalChat = [];
-        let roomChat = [];
-        let groupChat = [];
+        let chatMode = 'GLOBAL', myName = "Player";
+        let globalChat = [], roomChat = [], groupChat = [];
 
-        // ==========================================
-        // UI TOGGLES & VALIDATION
-        // ==========================================
         function slideLobby(index) {
-            const sections = document.getElementById('sliding-sections');
-            const slider = document.getElementById('slider');
-            if (index === 0) {
-                sections.style.transform = 'translateX(0)';
-                slider.style.left = '0';
-            } else {
-                sections.style.transform = 'translateX(-50%)';
-                slider.style.left = '50%';
-            }
+            document.getElementById('sliding-sections').style.transform = index === 0 ? 'translateX(0)' : 'translateX(-50%)';
+            document.getElementById('slider').style.left = index === 0 ? '0' : '50%';
         }
-        
         function toggleLudoColor() {
-            const gameSelect = document.getElementById('game-select').value;
-            const colorPicker = document.getElementById('ludo-color-picker');
-            if (gameSelect === 'ludo') {
-                colorPicker.style.display = 'flex';
-            } else {
-                colorPicker.style.display = 'none';
-            }
+            document.getElementById('ludo-color-picker').style.display = document.getElementById('game-select').value === 'ludo' ? 'flex' : 'none';
         }
-        
         function validateName() {
             myName = document.getElementById('your-name').value.trim();
-            if (!myName) { 
-                alert("Please enter 'your name' at the bottom first!"); 
-                return false; 
-            }
-            localStorage.setItem('karanUsername', myName);
-            return true;
+            if (!myName) { alert("Please enter 'your name' at the bottom first!"); return false; }
+            localStorage.setItem('karanUsername', myName); return true;
         }
-        
         window.onload = () => {
             const savedName = localStorage.getItem('karanUsername');
-            if (savedName) {
-                document.getElementById('your-name').value = savedName;
-            }
+            if (savedName) document.getElementById('your-name').value = savedName;
             renderChat();
         };
 
-        // ==========================================
         // GLOBAL CHAT
-        // ==========================================
         db.ref("global_chat").on("child_added", (snapshot) => {
             const data = snapshot.val();
-            const currentInputName = document.getElementById('your-name').value.trim();
-            const isMine = (data.sender === currentInputName);
-            
+            const isMine = (data.sender === document.getElementById('your-name').value.trim());
             globalChat.push({ sender: data.sender, msg: data.msg, isMine: isMine });
-            
             if (chatMode === 'GLOBAL') {
                 addMessageToUI(data.sender, data.msg, isMine);
-                if (!isMine) { 
-                    soundMsg.play().catch(()=>{}); 
-                    triggerNotification("Global Chat", `${data.sender}: ${data.msg}`); 
-                }
+                if (!isMine) { soundMsg.play().catch(()=>{}); triggerNotification("Global Chat", `${data.sender}: ${data.msg}`); }
             }
         });
 
         // ==========================================
-        // GROUP CHAT & ADMIN LOGIC
+        // GROUP CHAT & ADMIN
         // ==========================================
-        let currentGroupId = null;
-        let isGroupAdmin = false;
-        let groupListeners = [];
-        
-        function getSanitizedId(prefix, rawStr) {
-            const id = rawStr.toLowerCase().replace(/[^a-z0-9]/g, '');
-            return id ? `${prefix}-${id}` : null;
-        }
+        let currentGroupId = null, isGroupAdmin = false, groupListeners = [];
+        function getSanitizedId(prefix, rawStr) { return rawStr.toLowerCase().replace(/[^a-z0-9]/g, '') ? `${prefix}-${rawStr.toLowerCase().replace(/[^a-z0-9]/g, '')}` : null; }
 
         async function createGroup() {
             if(!validateName()) return;
-            
-            const rawId = document.getElementById('group-name').value.trim();
-            const rawPass = document.getElementById('group-pass').value.trim();
-            
-            if(!rawId || !rawPass) {
-                return alert("Enter Group ID and Password!");
-            }
-            
+            const rawId = document.getElementById('group-name').value.trim(), rawPass = document.getElementById('group-pass').value.trim();
+            if(!rawId || !rawPass) return alert("Enter Group ID and Password!");
             const groupId = getSanitizedId('group', rawId);
-            
             const snapshot = await db.ref(`groups/${groupId}`).once('value');
-            if (snapshot.exists()) {
-                return alert("Group ID already exists! Try joining or pick a new name.");
-            }
-
+            if (snapshot.exists()) return alert("Group ID exists! Try joining or pick a new name.");
             const adminKey = Math.floor(1000 + Math.random() * 9000).toString();
-            
-            await db.ref(`groups/${groupId}`).set({
-                settings: { pass: rawPass, admin: myName, adminKey: adminKey },
-                members: { [myName]: true }
-            });
-
-            isGroupAdmin = true;
-            setupGroup(groupId, rawId, rawPass, adminKey);
-            appendSystemMessage("You created the group. You are the Admin.");
+            await db.ref(`groups/${groupId}`).set({ settings: { pass: rawPass, admin: myName, adminKey: adminKey }, members: { [myName]: true } });
+            isGroupAdmin = true; setupGroup(groupId, rawId, rawPass, adminKey);
+            appendSystemMessage("Group created. You are Admin.");
         }
 
         async function joinGroup() {
             if(!validateName()) return;
-            
-            const rawId = document.getElementById('group-name').value.trim();
-            const rawPass = document.getElementById('group-pass').value.trim();
-            
-            if(!rawId || !rawPass) {
-                return alert("Enter Group ID and Password!");
-            }
-            
+            const rawId = document.getElementById('group-name').value.trim(), rawPass = document.getElementById('group-pass').value.trim();
+            if(!rawId || !rawPass) return alert("Enter Group ID and Password!");
             const groupId = getSanitizedId('group', rawId);
-
             const snapshot = await db.ref(`groups/${groupId}`).once('value');
-            if (!snapshot.exists()) {
-                return alert("Group not found!");
-            }
-            
+            if (!snapshot.exists()) return alert("Group not found!");
             const groupData = snapshot.val();
-            
-            if (groupData.settings.pass !== rawPass) {
-                return alert("Wrong Group Password!");
-            }
-            
-            if (groupData.banned && groupData.banned[myName]) {
-                return alert("You are BANNED from this group!");
-            }
-
+            if (groupData.settings.pass !== rawPass) return alert("Wrong Group Password!");
+            if (groupData.banned && groupData.banned[myName]) return alert("You are BANNED!");
             await db.ref(`groups/${groupId}/members/${myName}`).set(true);
-            isGroupAdmin = false;
-            
-            setupGroup(groupId, rawId, rawPass, null);
+            isGroupAdmin = false; setupGroup(groupId, rawId, rawPass, null);
             db.ref(`groups/${groupId}/chat`).push({ sender: "System", msg: `${myName} joined the group!` });
         }
 
         function setupGroup(groupId, rawId, rawPass, adminKey) {
-            currentGroupId = groupId; 
-            chatMode = 'GROUP'; 
-            groupChat = [];
-            
+            currentGroupId = groupId; chatMode = 'GROUP'; groupChat = [];
             document.getElementById('lobby-view').style.display = 'none';
             document.getElementById('group-view').style.display = 'flex';
-            document.getElementById('display-group-id').innerText = rawId;
-            document.getElementById('display-group-pass').innerText = rawPass;
+            document.getElementById('display-group-id').innerText = rawId; document.getElementById('display-group-pass').innerText = rawPass;
+            document.getElementById('chat-mode-badge').innerText = "GROUP CHAT"; document.getElementById('chat-mode-badge').style.backgroundColor = "#0ea5e9";
             
-            const badge = document.getElementById('chat-mode-badge');
-            badge.innerText = "GROUP CHAT"; 
-            badge.style.backgroundColor = "#0ea5e9";
-            
-            if (isGroupAdmin) {
-                enableAdminFeatures(adminKey);
-            } else {
-                document.getElementById('admin-key-display').style.display = 'none';
-                document.getElementById('admin-panel').style.display = 'none';
-                document.getElementById('claim-admin-section').style.display = 'flex';
-            }
-
+            if (isGroupAdmin) enableAdminFeatures(adminKey);
+            else { document.getElementById('admin-key-display').style.display = 'none'; document.getElementById('admin-panel').style.display = 'none'; document.getElementById('claim-admin-section').style.display = 'flex'; }
             db.ref(`groups/${groupId}/members/${myName}`).onDisconnect().remove();
 
             const chatRef = db.ref(`groups/${groupId}/chat`);
             chatRef.on('child_added', (snap) => {
-                const data = snap.val();
-                const isMine = (data.sender === myName);
-                
+                const data = snap.val(), isMine = (data.sender === myName);
                 groupChat.push({ sender: data.sender, msg: data.msg, isMine: isMine });
-                
-                if(chatMode === 'GROUP') {
-                    if (data.sender === "System") {
-                        appendSystemMessage(data.msg);
-                    } else { 
-                        addMessageToUI(data.sender, data.msg, isMine); 
-                        if(!isMine) soundMsg.play().catch(()=>{}); 
-                    }
-                }
+                if(chatMode === 'GROUP') { if (data.sender === "System") appendSystemMessage(data.msg); else { addMessageToUI(data.sender, data.msg, isMine); if(!isMine) soundMsg.play().catch(()=>{}); } }
             });
             groupListeners.push({ ref: chatRef, event: 'child_added' });
 
             const kickRef = db.ref(`groups/${groupId}/kicked/${myName}`);
-            kickRef.on('value', (snap) => {
-                if (snap.exists() && snap.val() === true) { 
-                    kickRef.remove(); 
-                    alert("Kicked by Admin!"); 
-                    quitGroup(true); 
-                }
-            });
+            kickRef.on('value', (snap) => { if (snap.exists() && snap.val() === true) { kickRef.remove(); alert("Kicked by Admin!"); quitGroup(true); } });
             groupListeners.push({ ref: kickRef, event: 'value' });
 
             const banRef = db.ref(`groups/${groupId}/banned/${myName}`);
-            banRef.on('value', (snap) => {
-                if (snap.exists() && snap.val() === true) { 
-                    alert("Banned by Admin!"); 
-                    quitGroup(true); 
-                }
-            });
+            banRef.on('value', (snap) => { if (snap.exists() && snap.val() === true) { alert("Banned by Admin!"); quitGroup(true); } });
             groupListeners.push({ ref: banRef, event: 'value' });
-
             renderChat();
         }
 
         function enableAdminFeatures(adminKey) {
-            document.getElementById('admin-key-display').style.display = 'block';
-            document.getElementById('display-admin-key').innerText = adminKey;
-            document.getElementById('admin-panel').style.display = 'block';
-            document.getElementById('claim-admin-section').style.display = 'none';
-            
+            document.getElementById('admin-key-display').style.display = 'block'; document.getElementById('display-admin-key').innerText = adminKey; document.getElementById('admin-panel').style.display = 'block'; document.getElementById('claim-admin-section').style.display = 'none';
             const memRef = db.ref(`groups/${currentGroupId}/members`);
             memRef.on('value', (snap) => {
-                const members = snap.val() || {};
-                const listHtml = document.getElementById('member-list');
-                listHtml.innerHTML = '';
-                
-                Object.keys(members).forEach(mem => {
-                    if(mem !== myName) {
-                        listHtml.innerHTML += `
-                            <div class="member-item">
-                                <span>${mem}</span>
-                                <div style="display:flex; gap:4px;">
-                                    <button class="kick-btn" onclick="kickMember('${mem}')">KICK</button>
-                                    <button class="ban-btn" onclick="banMember('${mem}')">BAN</button>
-                                </div>
-                            </div>
-                        `;
-                    }
-                });
+                const members = snap.val() || {}, listHtml = document.getElementById('member-list'); listHtml.innerHTML = '';
+                Object.keys(members).forEach(mem => { if(mem !== myName) listHtml.innerHTML += `<div class="member-item"><span>${mem}</span><div style="display:flex; gap:4px;"><button class="kick-btn" onclick="kickMember('${mem}')">KICK</button><button class="ban-btn" onclick="banMember('${mem}')">BAN</button></div></div>`; });
             });
             groupListeners.push({ ref: memRef, event: 'value' });
 
             const bannedRef = db.ref(`groups/${currentGroupId}/banned`);
             bannedRef.on('value', (snap) => {
-                const banned = snap.val() || {};
-                const bannedHtml = document.getElementById('banned-list');
-                bannedHtml.innerHTML = '';
-                
-                Object.keys(banned).forEach(mem => {
-                    bannedHtml.innerHTML += `
-                        <div class="member-item banned-item">
-                            <span>🚫 ${mem}</span>
-                            <button class="unban-btn" onclick="unbanMember('${mem}')">🔓 UNBAN</button>
-                        </div>
-                    `;
-                });
+                const banned = snap.val() || {}, bannedHtml = document.getElementById('banned-list'); bannedHtml.innerHTML = '';
+                Object.keys(banned).forEach(mem => { bannedHtml.innerHTML += `<div class="member-item banned-item"><span>🚫 ${mem}</span><button class="unban-btn" onclick="unbanMember('${mem}')">🔓 UNBAN</button></div>`; });
             });
             groupListeners.push({ ref: bannedRef, event: 'value' });
         }
 
         async function claimAdmin() {
-            const keyInput = document.getElementById('admin-key-input').value.trim();
-            const snap = await db.ref(`groups/${currentGroupId}/settings/adminKey`).once('value');
-            
-            if(String(snap.val()) === String(keyInput)) {
-                isGroupAdmin = true; 
-                alert("Success! You are now Admin.");
-                enableAdminFeatures(keyInput);
-            } else {
-                alert("Incorrect Admin Key!");
-            }
+            const keyInput = document.getElementById('admin-key-input').value.trim(), snap = await db.ref(`groups/${currentGroupId}/settings/adminKey`).once('value');
+            if(String(snap.val()) === String(keyInput)) { isGroupAdmin = true; alert("Success! You are now Admin."); enableAdminFeatures(keyInput); } else alert("Incorrect Admin Key!");
         }
-        
-        function kickMember(mem) { 
-            db.ref(`groups/${currentGroupId}/kicked/${mem}`).set(true); 
-            db.ref(`groups/${currentGroupId}/members/${mem}`).remove(); 
-            db.ref(`groups/${currentGroupId}/chat`).push({ sender: "System", msg: `${mem} was kicked.`}); 
-        }
-        
-        function banMember(mem) { 
-            db.ref(`groups/${currentGroupId}/banned/${mem}`).set(true); 
-            db.ref(`groups/${currentGroupId}/members/${mem}`).remove(); 
-            db.ref(`groups/${currentGroupId}/chat`).push({ sender: "System", msg: `${mem} was banned.`}); 
-        }
-        
-        function unbanMember(mem) { 
-            db.ref(`groups/${currentGroupId}/banned/${mem}`).remove(); 
-            db.ref(`groups/${currentGroupId}/chat`).push({ sender: "System", msg: `${mem} was unbanned.`}); 
-        }
+        function kickMember(mem) { db.ref(`groups/${currentGroupId}/kicked/${mem}`).set(true); db.ref(`groups/${currentGroupId}/members/${mem}`).remove(); db.ref(`groups/${currentGroupId}/chat`).push({ sender: "System", msg: `${mem} was kicked.`}); }
+        function banMember(mem) { db.ref(`groups/${currentGroupId}/banned/${mem}`).set(true); db.ref(`groups/${currentGroupId}/members/${mem}`).remove(); db.ref(`groups/${currentGroupId}/chat`).push({ sender: "System", msg: `${mem} was banned.`}); }
+        function unbanMember(mem) { db.ref(`groups/${currentGroupId}/banned/${mem}`).remove(); db.ref(`groups/${currentGroupId}/chat`).push({ sender: "System", msg: `${mem} was unbanned.`}); }
         
         async function quitGroup(wasRemoved = false) {
             if (currentGroupId) {
-                groupListeners.forEach(listener => listener.ref.off(listener.event)); 
-                groupListeners = [];
-                
-                if (!wasRemoved) {
-                    db.ref(`groups/${currentGroupId}/chat`).push({ sender: "System", msg: `${myName} left.` });
-                    await db.ref(`groups/${currentGroupId}/members/${myName}`).remove();
-                }
+                groupListeners.forEach(listener => listener.ref.off(listener.event)); groupListeners = [];
+                if (!wasRemoved) { db.ref(`groups/${currentGroupId}/chat`).push({ sender: "System", msg: `${myName} left.` }); await db.ref(`groups/${currentGroupId}/members/${myName}`).remove(); }
             }
-            
             db.ref(`groups/${currentGroupId}/members/${myName}`).onDisconnect().cancel();
-            
-            currentGroupId = null; 
-            isGroupAdmin = false; 
-            chatMode = 'GLOBAL';
-            
-            document.getElementById('group-view').style.display = 'none';
-            document.getElementById('lobby-view').style.display = 'flex';
-            document.getElementById('chat-mode-badge').innerText = "GLOBAL";
-            document.getElementById('chat-mode-badge').style.backgroundColor = "#1e692c";
-            
+            currentGroupId = null; isGroupAdmin = false; chatMode = 'GLOBAL';
+            document.getElementById('group-view').style.display = 'none'; document.getElementById('lobby-view').style.display = 'flex';
+            document.getElementById('chat-mode-badge').innerText = "GLOBAL"; document.getElementById('chat-mode-badge').style.backgroundColor = "#1e692c";
             renderChat();
         }
 
         // ==========================================
         // MULTIPLAYER ROOM (PEERJS)
         // ==========================================
-        let peer = null;
-        let hostConnection = null; 
-        let clientConnections = []; 
-        let isHost = false;
-        let currentGame = "tictactoe";
-        let playersInRoom = []; 
+        let peer = null, hostConnection = null, clientConnections = [], isHost = false, currentGame = "tictactoe", playersInRoom = []; 
         
         function cleanPeer() {
-            if (hostConnection) { 
-                hostConnection.close(); 
-                hostConnection = null; 
-            }
-            clientConnections.forEach(c => c.close()); 
-            clientConnections = [];
-            
-            if (peer) { 
-                peer.destroy(); 
-                peer = null; 
-            }
-            
-            myWins = 0; 
-            friendWins = 0; 
-            roomChat = []; 
-            playersInRoom = [];
+            if (hostConnection) { hostConnection.close(); hostConnection = null; }
+            clientConnections.forEach(c => c.close()); clientConnections = [];
+            if (peer) { peer.destroy(); peer = null; }
+            myWins = 0; friendWins = 0; roomChat = []; playersInRoom = [];
+        }
+
+        function getMyLudoColor() {
+            let myId = isHost ? 'host' : peer.id;
+            let p = playersInRoom.find(player => player.id === myId);
+            return p ? p.color : null;
         }
 
         function createRoom() {
             if(!validateName()) return;
+            const rid = document.getElementById('room-name').value.trim(), rp = document.getElementById('room-pass').value.trim();
+            if(!rid || !rp) return alert("Enter room id and pass!");
             
-            const rid = document.getElementById('room-name').value.trim();
-            const rp = document.getElementById('room-pass').value.trim();
-            
-            if(!rid || !rp) {
-                return alert("Enter room id and pass!");
-            }
-            
-            cleanPeer(); 
-            isHost = true; 
-            currentGame = document.getElementById('game-select').value;
-            
-            let hostColor = document.getElementById('my-ludo-color').value;
-            let hostSymbol = "X";
+            cleanPeer(); isHost = true; currentGame = document.getElementById('game-select').value;
+            let hostColor = document.getElementById('my-ludo-color').value, hostSymbol = "X";
             playersInRoom.push({ name: myName, id: 'host', color: hostColor, symbol: hostSymbol });
             
             peer = new Peer(getSanitizedId('room', rid)); 
-            
-            peer.on('open', () => {
-                switchToRoomView(rid, rp);
-                appendSystemMessage(`Room created (${currentGame}). Waiting for players...`);
-            });
-            
-            peer.on('error', (err) => {
-                if(err.type === 'unavailable-id') {
-                    alert("Room ID taken! Pick a new ID.");
-                } else {
-                    alert("Room Error: " + err.type);
-                }
-                quitRoom();
-            });
+            peer.on('open', () => { switchToRoomView(rid, rp); appendSystemMessage(`Room created (${currentGame}). Waiting for players...`); });
+            peer.on('error', (err) => { if(err.type === 'unavailable-id') alert("Room ID taken! Pick a new ID."); else alert("Room Error: " + err.type); quitRoom(); });
 
-            // Host accepts incoming connections
             peer.on('connection', (conn) => {
                 conn.on('data', (data) => {
                     if (data.type === 'join-request') {
-                        if (data.pass !== rp) { 
-                            conn.send({ type: 'reject', reason: "Wrong Password" }); 
-                            setTimeout(()=>conn.close(), 500); 
-                            return; 
-                        }
-                        
+                        if (data.pass !== rp) { conn.send({ type: 'reject', reason: "Wrong Password" }); setTimeout(()=>conn.close(), 500); return; }
                         if (currentGame === 'ludo') {
-                            const colorTaken = playersInRoom.find(p => p.color === data.color);
-                            if (colorTaken) { 
-                                conn.send({ type: 'reject', reason: "Color already taken! Pick another." }); 
-                                setTimeout(()=>conn.close(), 500); 
-                                return; 
-                            }
-                            if (playersInRoom.length >= 4) { 
-                                conn.send({ type: 'reject', reason: "Ludo room is full (4 players)." }); 
-                                setTimeout(()=>conn.close(), 500); 
-                                return; 
-                            }
-                            
+                            if (playersInRoom.find(p => p.color === data.color)) { conn.send({ type: 'reject', reason: "Color taken!" }); setTimeout(()=>conn.close(), 500); return; }
+                            if (playersInRoom.length >= 4) { conn.send({ type: 'reject', reason: "Ludo full (4 players)." }); setTimeout(()=>conn.close(), 500); return; }
                             playersInRoom.push({ name: data.name, id: conn.peer, color: data.color });
                         } else {
-                            if (playersInRoom.length >= 2) { 
-                                conn.send({ type: 'reject', reason: "Tic-Tac-Toe room full (2 players)." }); 
-                                setTimeout(()=>conn.close(), 500); 
-                                return; 
-                            }
+                            if (playersInRoom.length >= 2) { conn.send({ type: 'reject', reason: "Tic-Tac-Toe full (2 players)." }); setTimeout(()=>conn.close(), 500); return; }
                             playersInRoom.push({ name: data.name, id: conn.peer, symbol: "O" });
                         }
                         
-                        clientConnections.push(conn);
-                        setupHostClientListener(conn);
+                        clientConnections.push(conn); setupHostClientListener(conn);
+                        conn.send({ type: 'approve', game: currentGame, players: playersInRoom, state: { board, currentTurn } });
+                        broadcastToRoom({ type: 'player-joined', players: playersInRoom, newPlayer: data.name });
                         
-                        // Approve & Sync State to new player
-                        conn.send({ 
-                            type: 'approve', 
-                            game: currentGame, 
-                            players: playersInRoom, 
-                            state: { board, currentTurn, ludoTurnIdx } 
-                        });
-                        
-                        // Broadcast new player to everyone else
-                        broadcastToRoom({ 
-                            type: 'player-joined', 
-                            players: playersInRoom, 
-                            newPlayer: data.name 
-                        });
-                        
-                        if(currentGame === 'ludo') {
-                            renderLudoPlayers();
-                        } else {
-                            document.getElementById('btn-ttt-new').style.display = 'block';
-                        }
+                        if(currentGame === 'ludo') setupLudoMultiplayer();
+                        else document.getElementById('btn-ttt-new').style.display = 'block';
                     }
                 });
             });
@@ -1194,93 +478,48 @@
 
         function joinRoom() {
             if(!validateName()) return;
-            
-            const rid = document.getElementById('room-name').value.trim();
-            const rp = document.getElementById('room-pass').value.trim();
-            
-            if(!rid || !rp) {
-                return alert("Enter room id and pass!");
-            }
+            const rid = document.getElementById('room-name').value.trim(), rp = document.getElementById('room-pass').value.trim();
+            if(!rid || !rp) return alert("Enter room id and pass!");
 
-            cleanPeer(); 
-            isHost = false; 
-            const myColor = document.getElementById('my-ludo-color').value;
+            cleanPeer(); isHost = false; const myColor = document.getElementById('my-ludo-color').value;
 
             peer = new Peer(); 
             peer.on('open', () => {
                 hostConnection = peer.connect(getSanitizedId('room', rid));
-                
                 hostConnection.on('open', () => {
                     hostConnection.send({ type: 'join-request', pass: rp, name: myName, color: myColor });
-                    
                     hostConnection.on('data', (data) => {
-                        if (data.type === 'reject') {
-                            alert("Join Failed: " + data.reason);
-                            quitRoom();
-                        } else if (data.type === 'approve') {
-                            currentGame = data.game;
-                            playersInRoom = data.players;
-                            board = data.state.board; 
-                            currentTurn = data.state.currentTurn; 
-                            ludoTurnIdx = data.state.ludoTurnIdx;
+                        if (data.type === 'reject') { alert("Join Failed: " + data.reason); quitRoom(); } 
+                        else if (data.type === 'approve') {
+                            currentGame = data.game; playersInRoom = data.players;
+                            board = data.state.board; currentTurn = data.state.currentTurn;
                             
-                            const myData = playersInRoom.find(p => p.id === peer.id);
-                            mySymbol = myData.symbol || "O";
+                            const myData = playersInRoom.find(p => p.id === peer.id); mySymbol = myData.symbol || "O";
+                            switchToRoomView(rid, rp); appendSystemMessage("Joined Room successfully!");
                             
-                            switchToRoomView(rid, rp);
-                            appendSystemMessage("Joined Room successfully!");
-                            
-                            if (currentGame === 'ludo') {
-                                renderLudoPlayers();
-                            } else { 
-                                updateBoardUI(); 
-                                document.getElementById('btn-ttt-new').style.display = 'none'; // Only host clicks new game
-                            } 
+                            if (currentGame === 'ludo') setupLudoMultiplayer(); 
+                            else { updateBoardUI(); document.getElementById('btn-ttt-new').style.display = 'none'; } 
                         }
-                        // General Room events forwarded from Host
-                        else {
-                            handleRoomMessage(data);
-                        }
+                        else handleRoomMessage(data);
                     });
                 });
             });
-            
-            peer.on('error', () => { 
-                alert("Could not connect! Room not found."); 
-                quitRoom(); 
-            });
+            peer.on('error', () => { alert("Could not connect! Room not found."); quitRoom(); });
         }
 
-        // Host relays messages to everyone in the room
         function broadcastToRoom(data, excludeConn = null) {
-            clientConnections.forEach(c => {
-                if (c !== excludeConn && c.open) {
-                    c.send(data);
-                }
-            });
-            handleRoomMessage(data); // Host acts on the message locally too
+            clientConnections.forEach(c => { if (c !== excludeConn && c.open) c.send(data); });
+            handleRoomMessage(data); 
         }
 
         function setupHostClientListener(conn) {
-            conn.on('data', (data) => {
-                // Host receives action from client, broadcasts to all
-                if (data.type === 'chat' || data.type === 'move' || data.type === 'roll-dice') {
-                    broadcastToRoom(data, conn); // broadcast to others
-                    handleRoomMessage(data);     // host handles locally
-                }
-            });
-            
+            conn.on('data', (data) => { if (data.type === 'chat' || data.type === 'move' || data.type === 'ludo-roll' || data.type === 'ludo-move' || data.type === 'ludo-new') { broadcastToRoom(data, conn); handleRoomMessage(data); } });
             conn.on('close', () => {
                 const disconnectedUser = playersInRoom.find(p => p.id === conn.peer);
                 if(disconnectedUser) {
-                    clientConnections = clientConnections.filter(c => c !== conn);
-                    playersInRoom = playersInRoom.filter(p => p.id !== conn.peer);
-                    
+                    clientConnections = clientConnections.filter(c => c !== conn); playersInRoom = playersInRoom.filter(p => p.id !== conn.peer);
                     broadcastToRoom({ type: 'player-left', players: playersInRoom, name: disconnectedUser.name });
-                    
-                    if(currentGame === 'ludo') {
-                        renderLudoPlayers();
-                    }
+                    if(currentGame === 'ludo') setupLudoMultiplayer(); // Re-evaluate active players
                 }
             });
         }
@@ -1288,339 +527,513 @@
         function handleRoomMessage(data) {
             if (data.type === 'chat') {
                 const isMine = data.sender === myName;
-                if(!isMine) {
-                    roomChat.push({ sender: data.sender, msg: data.msg, isMine: false });
-                }
-                
-                if(chatMode === 'ROOM' && !isMine) {
-                    addMessageToUI(data.sender, data.msg, false);
-                    soundMsg.play().catch(()=>{}); 
-                    triggerNotification("Room Chat", `${data.sender}: ${data.msg}`);
-                }
+                if(!isMine) roomChat.push({ sender: data.sender, msg: data.msg, isMine: false });
+                if(chatMode === 'ROOM' && !isMine) { addMessageToUI(data.sender, data.msg, false); soundMsg.play().catch(()=>{}); triggerNotification("Room Chat", `${data.sender}: ${data.msg}`); }
             } else if (data.type === 'player-joined') {
-                playersInRoom = data.players;
-                appendSystemMessage(`${data.newPlayer} joined!`);
-                if(currentGame === 'ludo') renderLudoPlayers();
-                
+                playersInRoom = data.players; appendSystemMessage(`${data.newPlayer} joined!`);
+                if(currentGame === 'ludo') setupLudoMultiplayer();
             } else if (data.type === 'player-left') {
-                playersInRoom = data.players;
-                appendSystemMessage(`${data.name} left the room.`);
-                if(currentGame === 'ludo') renderLudoPlayers();
-                
+                playersInRoom = data.players; appendSystemMessage(`${data.name} left the room.`);
+                if(currentGame === 'ludo') setupLudoMultiplayer();
             } else if (data.type === 'move') {
                 receiveTTTMove(data.index, data.symbol);
-                
-            } else if (data.type === 'roll-dice') {
-                receiveLudoDice(data.value, data.roller);
-                
             } else if (data.type === 'new-game') {
-                board = ["", "", "", "", "", "", "", "", ""]; 
-                gameActive = true; 
-                currentTurn = data.turn; // This is the randomized turn from the host
-                
-                // Clear any winning highlights
-                const cells = document.querySelectorAll('.cell');
-                cells.forEach(c => c.classList.remove('winning-cell'));
-                
-                updateBoardUI();
-                appendSystemMessage(`New Game started! ${data.turn} goes first.`);
+                board = ["", "", "", "", "", "", "", "", ""]; gameActive = true; currentTurn = data.turn; 
+                document.querySelectorAll('.cell').forEach(c => c.classList.remove('winning-cell'));
+                updateBoardUI(); appendSystemMessage(`New TTT Game started! ${data.turn} goes first.`);
+            } else if (data.type === 'ludo-roll') {
+                executeLudoRoll(data.value, data.roller);
+            } else if (data.type === 'ludo-move') {
+                handleGotiClick(data.color, data.gotiIndex, true);
+            } else if (data.type === 'ludo-new') {
+                setupLudoMultiplayer();
+                appendSystemMessage(`New Ludo Game Started!`);
             }
         }
 
         function switchToRoomView(rid, rp) {
-            chatMode = 'ROOM'; 
-            roomChat = [];
-            
-            document.getElementById('lobby-view').style.display = 'none';
-            document.getElementById('tictactoe-view').style.display = 'none';
-            document.getElementById('ludo-view').style.display = 'none';
-
-            if (currentGame === 'tictactoe') {
-                document.getElementById('tictactoe-view').style.display = 'flex';
-                document.getElementById('display-ttt-room').innerText = rid;
-                document.getElementById('display-ttt-pass').innerText = rp;
-            } else {
-                document.getElementById('ludo-view').style.display = 'flex';
-                document.getElementById('display-ludo-room').innerText = rid;
-                document.getElementById('display-ludo-pass').innerText = rp;
-            }
-
-            const badge = document.getElementById('chat-mode-badge');
-            badge.innerText = "PRIVATE ROOM"; 
-            badge.style.backgroundColor = "#dc2626";
-            
-            updateScoreUI(); 
-            renderChat();
+            chatMode = 'ROOM'; roomChat = [];
+            document.getElementById('lobby-view').style.display = 'none'; document.getElementById('tictactoe-view').style.display = 'none'; document.getElementById('ludo-view').style.display = 'none';
+            if (currentGame === 'tictactoe') { document.getElementById('tictactoe-view').style.display = 'flex'; document.getElementById('display-ttt-room').innerText = rid; document.getElementById('display-ttt-pass').innerText = rp; } 
+            else { document.getElementById('ludo-view').style.display = 'flex'; document.getElementById('display-ludo-room').innerText = rid; document.getElementById('display-ludo-pass').innerText = rp; }
+            document.getElementById('chat-mode-badge').innerText = "PRIVATE ROOM"; document.getElementById('chat-mode-badge').style.backgroundColor = "#dc2626";
+            updateScoreUI(); renderChat();
         }
 
         function quitRoom() {
-            chatMode = 'GLOBAL'; 
-            cleanPeer();
-            
-            document.getElementById('lobby-view').style.display = 'flex';
-            document.getElementById('tictactoe-view').style.display = 'none';
-            document.getElementById('ludo-view').style.display = 'none';
-            
-            document.getElementById('chat-mode-badge').innerText = "GLOBAL";
-            document.getElementById('chat-mode-badge').style.backgroundColor = "#1e692c";
-            
+            chatMode = 'GLOBAL'; cleanPeer();
+            document.getElementById('lobby-view').style.display = 'flex'; document.getElementById('tictactoe-view').style.display = 'none'; document.getElementById('ludo-view').style.display = 'none';
+            document.getElementById('chat-mode-badge').innerText = "GLOBAL"; document.getElementById('chat-mode-badge').style.backgroundColor = "#1e692c";
             renderChat();
         }
 
         // ==========================================
         // TIC TAC TOE LOGIC
         // ==========================================
-        let board = ["", "", "", "", "", "", "", "", ""];
-        let mySymbol = "X";
-        let currentTurn = "X";
-        let gameActive = false;
-        let myWins = 0;
-        let friendWins = 0;
-        const cells = document.querySelectorAll('.cell');
-
+        let board = ["", "", "", "", "", "", "", "", ""], mySymbol = "X", currentTurn = "X", gameActive = false, myWins = 0, friendWins = 0; const cells = document.querySelectorAll('.cell');
         function makeMove(index) {
             if (!gameActive || board[index] !== "" || currentTurn !== mySymbol) return;
+            soundClick.play().catch(()=>{});
+            const moveData = { type: 'move', index: index, symbol: mySymbol };
+            if(isHost) broadcastToRoom(moveData); else hostConnection.send(moveData); 
+            if(!isHost) receiveTTTMove(index, mySymbol); 
+        }
+        function receiveTTTMove(index, symbol) { board[index] = symbol; currentTurn = currentTurn === "X" ? "O" : "X"; updateBoardUI(); checkWinner(); }
+        function updateBoardUI() {
+            cells.forEach((c, i) => { c.innerText = board[i]; c.classList.remove('x', 'o'); if (board[i] !== "") c.classList.add(board[i].toLowerCase()); });
+            const turnInd = document.getElementById('turn-indicator-ttt');
+            if(!gameActive && board.every(x => x === "")) turnInd.innerText = isHost ? "CLICK NEW GAME" : "WAITING FOR HOST";
+            else turnInd.innerText = currentTurn === mySymbol ? `YOUR TURN (${mySymbol})` : `OPPONENT'S TURN (${currentTurn})`;
+        }
+        function checkWinner() {
+            const wins = [[0,1,2], [3,4,5], [6,7,8], [0,3,6], [1,4,7], [2,5,8], [0,4,8], [2,4,6]]; let winner = null, winningLine = null;
+            for (let line of wins) { const [a, b, c] = line; if (board[a] && board[a] === board[b] && board[a] === board[c]) { winner = board[a]; winningLine = line; break; } }
+            const turnInd = document.getElementById('turn-indicator-ttt');
+            if (winner) {
+                if (winningLine) winningLine.forEach(index => cells[index].classList.add('winning-cell'));
+                if (winner === mySymbol) { turnInd.innerText = "YOU WON! 🎉"; myWins++; soundWin.play().catch(()=>{}); } else { turnInd.innerText = "YOU LOST! 😢"; friendWins++; }
+                updateScoreUI(); gameActive = false; 
+            } else if (!board.includes("")) { turnInd.innerText = "IT'S A DRAW!"; gameActive = false; }
+        }
+        function requestNewTTTGame() { if (isHost && playersInRoom.length === 2) { broadcastToRoom({ type: 'new-game', turn: Math.random() < 0.5 ? "X" : "O" }); } }
+        function updateScoreUI() { document.getElementById('ttt-my-score').innerText = myWins; document.getElementById('ttt-friend-score').innerText = friendWins; }
+
+        // ==========================================
+        // ULTIMATE PREMIUM LUDO LOGIC
+        // ==========================================
+        const ludoTrack = [
+            [6,1],[6,2],[6,3],[6,4],[6,5], [5,6],[4,6],[3,6],[2,6],[1,6],[0,6], 
+            [0,7],[0,8], 
+            [1,8],[2,8],[3,8],[4,8],[5,8], [6,9],[6,10],[6,11],[6,12],[6,13],[6,14], 
+            [7,14],[8,14], 
+            [8,13],[8,12],[8,11],[8,10],[8,9], [9,8],[10,8],[11,8],[12,8],[13,8],[14,8], 
+            [14,7],[14,6], 
+            [13,6],[12,6],[11,6],[10,6],[9,6], [8,5],[8,4],[8,3],[8,2],[8,1],[8,0], 
+            [7,0],[6,0] 
+        ];
+        
+        const ludoSafeZones = [0, 8, 13, 21, 26, 34, 39, 47];
+        
+        const ludoPlayers = {
+            red: { startIdx: 0, homePath: [[7,1],[7,2],[7,3],[7,4],[7,5]], gotis: [-1, -1, -1, -1] },
+            green: { startIdx: 13, homePath: [[1,7],[2,7],[3,7],[4,7],[5,7]], gotis: [-1, -1, -1, -1] },
+            yellow: { startIdx: 26, homePath: [[7,13],[7,12],[7,11],[7,10],[7,9]], gotis: [-1, -1, -1, -1] },
+            blue: { startIdx: 39, homePath: [[13,7],[12,7],[11,7],[10,7],[9,7]], gotis: [-1, -1, -1, -1] }
+        };
+
+        let activeLudoColors = [];
+        let ludoCurrentTurn = 0; 
+        let ludoDiceValue = 0;
+        let ludoHasRolled = false;
+        let ludoIsAnimating = false;
+
+        function setupLudoMultiplayer() {
+            // Determine active colors based on who is in the room
+            activeLudoColors = ['red', 'green', 'yellow', 'blue'].filter(c => playersInRoom.some(p => p.color === c));
+            if(activeLudoColors.length === 0) activeLudoColors = ['red']; // Safe fallback
             
+            ludoCurrentTurn = 0;
+            ludoHasRolled = false;
+            ludoIsAnimating = false;
+            ludoDiceValue = 0;
+
+            Object.keys(ludoPlayers).forEach(c => {
+                ludoPlayers[c].gotis = [-1, -1, -1, -1];
+            });
+
+            document.getElementById('win-screen').classList.remove('show');
+            document.getElementById('dice-btn').disabled = false;
+            document.getElementById('dice-result').innerText = '🎲';
+            
+            if(isHost) {
+                document.getElementById('btn-ludo-new').style.display = 'block';
+            } else {
+                document.getElementById('btn-ludo-new').style.display = 'none';
+            }
+
+            initBoard(); 
+            updateLudoTurnUI();
+            logStatus(`Game started! Waiting for ${activeLudoColors[0].toUpperCase()}`);
+        }
+
+        function initBoard() {
+            const board = document.getElementById('ludo-board');
+            board.innerHTML = ''; // Clear prior elements
+            
+            for (let r = 0; r < 15; r++) {
+                for (let c = 0; c < 15; c++) {
+                    let cell = document.createElement('div');
+                    cell.className = 'ludo-cell';
+                    cell.id = `cell-${r}-${c}`;
+                    cell.style.gridRow = r + 1;
+                    cell.style.gridColumn = c + 1;
+                    board.appendChild(cell);
+                }
+            }
+
+            drawBase('red'); drawBase('green'); 
+            drawBase('blue'); drawBase('yellow');
+
+            let center = document.createElement('div');
+            center.className = 'home-center';
+            center.innerText = '★';
+            board.appendChild(center);
+
+            colorTrack();
+            initGotisDOM();
+            setTimeout(renderGotis, 100); 
+        }
+
+        function drawBase(color) {
+            const board = document.getElementById('ludo-board');
+            let base = document.createElement('div');
+            base.className = `ludo-base ${color}`;
+            let inner = document.createElement('div');
+            inner.className = 'base-inner';
+            
+            for(let i = 0; i < 4; i++) {
+                let pocket = document.createElement('div');
+                pocket.className = 'pocket';
+                pocket.id = `pocket-${color}-${i}`;
+                inner.appendChild(pocket);
+            }
+            base.appendChild(inner);
+            board.appendChild(base);
+        }
+
+        function colorTrack() {
+            document.getElementById(`cell-${ludoTrack[0][0]}-${ludoTrack[0][1]}`).classList.add('red-cell');
+            document.getElementById(`cell-${ludoTrack[13][0]}-${ludoTrack[13][1]}`).classList.add('green-cell');
+            document.getElementById(`cell-${ludoTrack[26][0]}-${ludoTrack[26][1]}`).classList.add('yellow-cell');
+            document.getElementById(`cell-${ludoTrack[39][0]}-${ludoTrack[39][1]}`).classList.add('blue-cell');
+
+            ludoSafeZones.forEach(idx => document.getElementById(`cell-${ludoTrack[idx][0]}-${ludoTrack[idx][1]}`).classList.add('ludo-safe'));
+
+            ludoPlayers.red.homePath.forEach(p => document.getElementById(`cell-${p[0]}-${p[1]}`).classList.add('red-cell'));
+            ludoPlayers.green.homePath.forEach(p => document.getElementById(`cell-${p[0]}-${p[1]}`).classList.add('green-cell'));
+            ludoPlayers.yellow.homePath.forEach(p => document.getElementById(`cell-${p[0]}-${p[1]}`).classList.add('yellow-cell'));
+            ludoPlayers.blue.homePath.forEach(p => document.getElementById(`cell-${p[0]}-${p[1]}`).classList.add('blue-cell'));
+        }
+
+        function logStatus(message) {
+            document.getElementById('status-log').innerText = message;
+        }
+
+        function initGotisDOM() {
+            const board = document.getElementById('ludo-board');
+            ['red', 'green', 'yellow', 'blue'].forEach(color => {
+                for(let i=0; i<4; i++) {
+                    let goti = document.createElement('div');
+                    goti.className = `goti ${color}`;
+                    goti.id = `goti-${color}-${i}`;
+                    goti.onclick = () => handleGotiClick(color, i, false);
+                    board.appendChild(goti);
+                }
+            });
+        }
+
+        function getCoords(elementId) {
+            const el = document.getElementById(elementId);
+            return { x: el.offsetLeft, y: el.offsetTop, w: el.offsetWidth, h: el.offsetHeight };
+        }
+
+        function renderGotis() {
+            let cellOccupancy = {};
+
+            ['red', 'green', 'yellow', 'blue'].forEach(color => {
+                ludoPlayers[color].gotis.forEach((pos, index) => {
+                    let gotiEl = document.getElementById(`goti-${color}-${index}`);
+                    
+                    if (pos === 56) {
+                        gotiEl.style.display = 'none'; 
+                        return;
+                    }
+                    gotiEl.style.display = 'block';
+
+                    let targetId = '';
+                    if (pos === -1) {
+                        targetId = `pocket-${color}-${index}`;
+                    } else if (pos >= 0 && pos <= 50) {
+                        let trackIdx = (ludoPlayers[color].startIdx + pos) % 52;
+                        targetId = `cell-${ludoTrack[trackIdx][0]}-${ludoTrack[trackIdx][1]}`;
+                    } else if (pos >= 51 && pos <= 55) {
+                        let homeIdx = pos - 51;
+                        targetId = `cell-${ludoPlayers[color].homePath[homeIdx][0]}-${ludoPlayers[color].homePath[homeIdx][1]}`;
+                    }
+
+                    if (!cellOccupancy[targetId]) cellOccupancy[targetId] = [];
+                    cellOccupancy[targetId].push(gotiEl);
+                });
+            });
+
+            Object.keys(cellOccupancy).forEach(targetId => {
+                let gotis = cellOccupancy[targetId];
+                let coords = getCoords(targetId);
+                
+                // Goti is 12x12
+                let centerX = coords.x + (coords.w / 2) - 6; 
+                let centerY = coords.y + (coords.h / 2) - 6;
+
+                gotis.forEach((gotiEl, i) => {
+                    let scale = 1;
+                    let offsetX = 0;
+                    let offsetY = 0;
+
+                    if (gotis.length > 1 && !targetId.includes('pocket')) {
+                        scale = 0.75;
+                        offsetX = (i % 2 === 0) ? -4 : 4;
+                        offsetY = (i < 2) ? -4 : 4;
+                    }
+                    
+                    gotiEl.style.left = `${centerX + offsetX}px`;
+                    gotiEl.style.top = `${centerY + offsetY}px`;
+                    
+                    if (!gotiEl.classList.contains('moving') && !gotiEl.matches(':hover')) {
+                        gotiEl.style.transform = `scale(${scale})`;
+                    }
+                });
+            });
+        }
+
+        function rollLudoDice() {
+            if (ludoHasRolled || ludoIsAnimating) return;
+            
+            let myColor = getMyLudoColor();
+            if (activeLudoColors[ludoCurrentTurn] !== myColor) return alert("Not your turn!");
+            
+            ludoHasRolled = true;
+            document.getElementById('dice-btn').disabled = true;
+            
+            let result = Math.floor(Math.random() * 6) + 1;
+            
+            const rollData = { type: 'ludo-roll', value: result, roller: myName };
+            if (isHost) broadcastToRoom(rollData); else hostConnection.send(rollData);
+
+            executeLudoRoll(result, myName);
+        }
+
+        function executeLudoRoll(val, roller) {
+            ludoHasRolled = true;
+            ludoIsAnimating = true;
+            document.getElementById('dice-btn').disabled = true;
             soundClick.play().catch(()=>{});
             
-            const moveData = { type: 'move', index: index, symbol: mySymbol };
-            if(isHost) { 
-                broadcastToRoom(moveData); 
-            } else { 
-                hostConnection.send(moveData); 
-            } 
-            
-            // Optimistic update for the person who clicked
-            if(!isHost) { 
-                receiveTTTMove(index, mySymbol); 
-            }
-        }
-
-        function receiveTTTMove(index, symbol) {
-            board[index] = symbol; 
-            currentTurn = currentTurn === "X" ? "O" : "X";
-            updateBoardUI(); 
-            checkWinner();
-        }
-
-        function updateBoardUI() {
-            cells.forEach((c, i) => { 
-                c.innerText = board[i]; 
-                
-                // Keep existing classes, but refresh symbol classes
-                c.classList.remove('x', 'o');
-                if (board[i] !== "") {
-                    c.classList.add(board[i].toLowerCase());
+            let rolls = 0;
+            let diceEl = document.getElementById('dice-result');
+            let rollAnim = setInterval(() => {
+                diceEl.innerText = Math.floor(Math.random() * 6) + 1;
+                rolls++;
+                if (rolls >= 10) {
+                    clearInterval(rollAnim);
+                    ludoDiceValue = val;
+                    diceEl.innerText = ludoDiceValue;
+                    logStatus(`${activeLudoColors[ludoCurrentTurn].toUpperCase()} rolled a ${ludoDiceValue}!`);
+                    if(roller !== myName) triggerNotification("Dice Rolled", `${roller} rolled a ${ludoDiceValue}`);
+                    
+                    ludoIsAnimating = false;
+                    evaluateMoves();
                 }
+            }, 50);
+        }
+
+        function evaluateMoves() {
+            let color = activeLudoColors[ludoCurrentTurn];
+            let movableIndexes = [];
+
+            ludoPlayers[color].gotis.forEach((pos, idx) => {
+                if (pos === -1 && ludoDiceValue === 6) movableIndexes.push(idx);
+                else if (pos >= 0 && pos + ludoDiceValue <= 56) movableIndexes.push(idx);
             });
-            
-            const turnInd = document.getElementById('turn-indicator');
-            if(!gameActive && board.every(x => x === "")) {
-                turnInd.innerText = isHost ? "CLICK NEW GAME" : "WAITING FOR HOST";
+
+            document.querySelectorAll('.goti').forEach(g => g.classList.remove('movable'));
+
+            if (movableIndexes.length === 0) {
+                logStatus(`${color.toUpperCase()} has no valid moves.`);
+                setTimeout(nextTurn, 1500); 
             } else {
-                turnInd.innerText = currentTurn === mySymbol ? `YOUR TURN (${mySymbol})` : `OPPONENT'S TURN (${currentTurn})`;
+                let myColor = getMyLudoColor();
+                if (color === myColor) {
+                    if (movableIndexes.length === 1) {
+                        logStatus(`Auto-moving...`);
+                        setTimeout(() => handleGotiClick(color, movableIndexes[0], false), 500);
+                    } else {
+                        logStatus(`Select a glowing piece to move.`);
+                        movableIndexes.forEach(idx => {
+                            document.getElementById(`goti-${color}-${idx}`).classList.add('movable');
+                        });
+                    }
+                } else {
+                    logStatus(`Waiting for ${color.toUpperCase()} to move...`);
+                }
             }
         }
 
-        function checkWinner() {
-            const wins = [
-                [0,1,2], [3,4,5], [6,7,8], // Rows
-                [0,3,6], [1,4,7], [2,5,8], // Columns
-                [0,4,8], [2,4,6]           // Diagonals
-            ];
+        async function handleGotiClick(color, gotiIndex, isFromNetwork = false) {
+            if (!ludoHasRolled || color !== activeLudoColors[ludoCurrentTurn] || ludoIsAnimating) return;
+
+            let gotiEl = document.getElementById(`goti-${color}-${gotiIndex}`);
             
-            let winner = null;
-            let winningLine = null;
-            
-            for (let line of wins) {
-                const [a, b, c] = line;
-                if (board[a] && board[a] === board[b] && board[a] === board[c]) {
-                    winner = board[a];
-                    winningLine = line;
-                    break;
-                }
+            if (!isFromNetwork) {
+                let myColor = getMyLudoColor();
+                if (color !== myColor) return;
+                let hasMultipleOptions = document.querySelectorAll('.movable').length > 1;
+                if (hasMultipleOptions && !gotiEl.classList.contains('movable')) return;
+
+                const moveData = { type: 'ludo-move', color: color, gotiIndex: gotiIndex };
+                if (isHost) broadcastToRoom(moveData); else hostConnection.send(moveData);
             }
-            
-            const turnInd = document.getElementById('turn-indicator');
-            
-            if (winner) {
-                // Highlight winning cells visually
-                if (winningLine) {
-                    winningLine.forEach(index => {
-                        cells[index].classList.add('winning-cell');
+
+            isAnimating = true;
+            ludoIsAnimating = true;
+            document.querySelectorAll('.goti').forEach(g => g.classList.remove('movable'));
+
+            let pos = ludoPlayers[color].gotis[gotiIndex];
+
+            if (pos === -1 && ludoDiceValue === 6) {
+                gotiEl.classList.add('moving');
+                ludoPlayers[color].gotis[gotiIndex] = 0;
+                renderGotis();
+                logStatus(`${color.toUpperCase()} is out of base!`);
+                await new Promise(r => setTimeout(r, 300)); 
+                gotiEl.classList.remove('moving');
+                renderGotis();
+                finalizeMove(color, true); 
+                return;
+            }
+
+            if (pos + ludoDiceValue <= 56) {
+                for(let step = 0; step < ludoDiceValue; step++) {
+                    gotiEl.classList.add('moving'); 
+                    ludoPlayers[color].gotis[gotiIndex]++;
+                    renderGotis(); 
+                    
+                    await new Promise(r => setTimeout(r, 150)); 
+                    gotiEl.classList.remove('moving'); 
+                    
+                    if (step < ludoDiceValue - 1) {
+                        await new Promise(r => setTimeout(r, 150));
+                    }
+                }
+                
+                let cutSomeone = checkCut(color, gotiIndex);
+                let reachedCenter = (ludoPlayers[color].gotis[gotiIndex] === 56);
+                
+                if (cutSomeone) await new Promise(r => setTimeout(r, 400)); 
+
+                let getsExtraTurn = (ludoDiceValue === 6 || cutSomeone || reachedCenter);
+                finalizeMove(color, getsExtraTurn);
+            }
+        }
+
+        function checkCut(myColor, gotiIndex) {
+            let myPos = ludoPlayers[myColor].gotis[gotiIndex];
+            if (myPos > 50) return false; 
+
+            let myTrackIdx = (ludoPlayers[myColor].startIdx + myPos) % 52;
+            if (ludoSafeZones.includes(myTrackIdx)) return false;
+
+            let cut = false;
+            activeLudoColors.forEach(enemyColor => {
+                if (enemyColor !== myColor) {
+                    ludoPlayers[enemyColor].gotis.forEach((enemyPos, eIdx) => {
+                        if (enemyPos >= 0 && enemyPos <= 50) {
+                            let enemyTrackIdx = (ludoPlayers[enemyColor].startIdx + enemyPos) % 52;
+                            if (myTrackIdx === enemyTrackIdx) {
+                                ludoPlayers[enemyColor].gotis[eIdx] = -1; 
+                                cut = true;
+                                logStatus(`⚔️ ${myColor.toUpperCase()} CUT ${enemyColor.toUpperCase()}!`);
+                            }
+                        }
                     });
                 }
-                
-                if (winner === mySymbol) { 
-                    turnInd.innerText = "YOU WON! 🎉"; 
-                    myWins++; 
-                    soundWin.play().catch(()=>{}); 
-                } else { 
-                    turnInd.innerText = "YOU LOST! 😢"; 
-                    friendWins++; 
-                }
-                
-                updateScoreUI(); 
-                gameActive = false; 
-            }
-            else if (!board.includes("")) { 
-                turnInd.innerText = "IT'S A DRAW!"; 
-                gameActive = false; 
-            }
-        }
-
-        function requestNewGame() {
-            if (isHost && playersInRoom.length === 2) { 
-                const randomStarts = Math.random() < 0.5 ? "X" : "O";
-                broadcastToRoom({ type: 'new-game', turn: randomStarts }); 
-            }
-        }
-        
-        function updateScoreUI() { 
-            document.getElementById('ttt-my-score').innerText = myWins; 
-            document.getElementById('ttt-friend-score').innerText = friendWins; 
-        }
-
-        // ==========================================
-        // LUDO DICE & MULTIPLAYER SYNC
-        // ==========================================
-        const diceFaces = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
-        let ludoTurnIdx = 0; // Indexes into the playersInRoom array
-
-        function renderLudoPlayers() {
-            const list = document.getElementById('ludo-players-list');
-            list.innerHTML = '';
-            
-            playersInRoom.forEach((p, idx) => {
-                const isMyTurn = (idx === ludoTurnIdx);
-                const borderStyle = isMyTurn ? 'border: 4px solid black; transform: scale(1.1); box-shadow: 0 0 10px rgba(0,0,0,0.5);' : '';
-                
-                list.innerHTML += `
-                    <div class="ludo-player-badge color-${p.color}" style="${borderStyle}">
-                        ${p.name}
-                    </div>
-                `;
             });
+            
+            if(cut) renderGotis(); 
+            return cut;
+        }
+
+        function finalizeMove(color, extraTurn) {
+            ludoIsAnimating = false;
+            
+            if (ludoPlayers[color].gotis.every(p => p === 56)) {
+                logStatus(`🎉 GREAT ${color.toUpperCase()} WON! 🎉`);
+                document.getElementById('dice-btn').disabled = true;
+                
+                let winScreen = document.getElementById('win-screen');
+                let winText = document.getElementById('win-text');
+                winText.innerText = `GREAT ${color.toUpperCase()} WON!`;
+                winText.style.color = `var(--${color})`;
+                winScreen.classList.add('show');
+                return;
+            }
+
+            if (extraTurn) {
+                ludoHasRolled = false;
+                document.getElementById('dice-btn').disabled = false;
+                logStatus(`${color.toUpperCase()} gets an extra turn!`);
+            } else {
+                nextTurn();
+            }
+        }
+
+        function nextTurn() {
+            ludoCurrentTurn = (ludoCurrentTurn + 1) % activeLudoColors.length;
+            ludoHasRolled = false;
+            ludoDiceValue = 0;
+            ludoIsAnimating = false;
+            
+            document.getElementById('dice-btn').disabled = false;
+            document.getElementById('dice-result').innerText = '🎲';
             
             updateLudoTurnUI();
         }
 
-        function rollLudoDice() {
-            if (playersInRoom.length === 0) return;
-            
-            const activePlayer = playersInRoom[ludoTurnIdx];
-            const myRoomId = isHost ? 'host' : peer.id;
-            
-            if (activePlayer.id !== myRoomId) {
-                return alert("It is not your turn!");
-            }
-            
-            const result = Math.floor(Math.random() * 6);
-            const rollData = { type: 'roll-dice', value: result, roller: myName };
-            
-            if(isHost) {
-                broadcastToRoom(rollData);
-            } else {
-                hostConnection.send(rollData);
-            }
-            
-            if(!isHost) {
-                receiveLudoDice(result, myName); // Optimistic UI
-            }
-        }
-
-        function receiveLudoDice(value, roller) {
-            soundClick.play().catch(()=>{});
-            document.getElementById('dice-display').innerText = diceFaces[value];
-            
-            if(roller !== myName) {
-                triggerNotification("Dice Rolled", `${roller} rolled a ${value + 1}`);
-            }
-            
-            // Turn Logic: Advance turn if the roll is not a 6 (index 5)
-            if (value !== 5) { 
-                ludoTurnIdx = (ludoTurnIdx + 1) % playersInRoom.length;
-            }
-            
-            renderLudoPlayers();
-        }
-
         function updateLudoTurnUI() {
-            if(playersInRoom.length === 0) return;
-            
-            const activePlayer = playersInRoom[ludoTurnIdx];
-            const myRoomId = isHost ? 'host' : peer.id;
-            const isMe = activePlayer.id === myRoomId;
-            
-            document.getElementById('ludo-turn-indicator').innerText = isMe ? "YOUR TURN TO ROLL" : `WAITING FOR ${activePlayer.name.toUpperCase()}`;
+            let color = activeLudoColors[ludoCurrentTurn];
+            const indicator = document.getElementById('turn-indicator');
+            indicator.innerText = `Turn: ${color}`;
+            indicator.style.color = `var(--${color})`;
+            indicator.style.borderColor = `var(--${color})`;
+            logStatus(`Waiting for ${color.toUpperCase()} to roll...`);
         }
 
-        // ==========================================
-        // CHAT SENDING & RENDERING
-        // ==========================================
-        function handleChatKeyPress(e) { 
-            if (e.key === 'Enter') sendMessage(); 
+        function requestNewLudoGame() {
+            if(isHost) broadcastToRoom({ type: 'ludo-new' });
         }
-        
+
+        window.addEventListener('resize', () => { if(!ludoIsAnimating && chatMode === 'ROOM' && currentGame === 'ludo') renderGotis(); });
+
+        // ==========================================
+        // CHAT SENDING
+        // ==========================================
+        function handleChatKeyPress(e) { if (e.key === 'Enter') sendMessage(); }
         function sendMessage() {
             if (!validateName()) return;
-            
-            const input = document.getElementById('chat-input');
-            const msg = input.value.trim();
+            const input = document.getElementById('chat-input'), msg = input.value.trim();
             if (!msg) return;
 
             if (chatMode === 'ROOM') {
                 const chatData = { type: 'chat', msg: msg, sender: myName };
-                roomChat.push({ sender: myName, msg: msg, isMine: true });
-                addMessageToUI(myName, msg, true);
-                
-                if(isHost) {
-                    broadcastToRoom(chatData, null); // broadcast to others
-                } else {
-                    hostConnection.send(chatData);
-                }
+                roomChat.push({ sender: myName, msg: msg, isMine: true }); addMessageToUI(myName, msg, true);
+                if(isHost) broadcastToRoom(chatData, null); else hostConnection.send(chatData);
             } 
-            else if (chatMode === 'GROUP' && currentGroupId) {
-                db.ref(`groups/${currentGroupId}/chat`).push({ sender: myName, msg: msg });
-            } 
-            else if (chatMode === 'GLOBAL') {
-                db.ref("global_chat").push({ sender: myName, msg: msg });
-            }
-            
+            else if (chatMode === 'GROUP' && currentGroupId) db.ref(`groups/${currentGroupId}/chat`).push({ sender: myName, msg: msg });
+            else if (chatMode === 'GLOBAL') db.ref("global_chat").push({ sender: myName, msg: msg });
             input.value = '';
         }
-        
         function addMessageToUI(sender, msg, isMine) {
-            const container = document.createElement('div');
-            container.className = `msg-container ${isMine ? 'mine' : 'theirs'}`;
-            container.innerHTML = `
-                <div class="msg-name">${sender}</div>
-                <div class="msg-bubble">${msg}</div>
-            `;
-            document.getElementById('chat-messages').appendChild(container);
-            document.getElementById('chat-messages').scrollTop = document.getElementById('chat-messages').scrollHeight;
+            const container = document.createElement('div'); container.className = `msg-container ${isMine ? 'mine' : 'theirs'}`;
+            container.innerHTML = `<div class="msg-name">${sender}</div><div class="msg-bubble">${msg}</div>`;
+            document.getElementById('chat-messages').appendChild(container); document.getElementById('chat-messages').scrollTop = document.getElementById('chat-messages').scrollHeight;
         }
-        
         function appendSystemMessage(msg) {
-            const div = document.createElement('div');
-            div.style.cssText = 'text-align:center; font-size:12px; color:gray; margin:5px 0; font-weight:bold;';
-            div.innerText = msg;
-            document.getElementById('chat-messages').appendChild(div);
-            document.getElementById('chat-messages').scrollTop = document.getElementById('chat-messages').scrollHeight;
+            const div = document.createElement('div'); div.style.cssText = 'text-align:center; font-size:12px; color:gray; margin:5px 0; font-weight:bold;'; div.innerText = msg;
+            document.getElementById('chat-messages').appendChild(div); document.getElementById('chat-messages').scrollTop = document.getElementById('chat-messages').scrollHeight;
         }
-        
         function renderChat() {
-            const cm = document.getElementById('chat-messages'); 
-            cm.innerHTML = "";
-            
-            let activeChat;
-            if (chatMode === 'ROOM') activeChat = roomChat;
-            else if (chatMode === 'GROUP') activeChat = groupChat;
-            else activeChat = globalChat;
-            
-            appendSystemMessage(`--- ${chatMode} CHAT ---`);
-            
-            activeChat.forEach(c => addMessageToUI(c.sender, c.msg, c.isMine));
+            const cm = document.getElementById('chat-messages'); cm.innerHTML = "";
+            let activeChat; if (chatMode === 'ROOM') activeChat = roomChat; else if (chatMode === 'GROUP') activeChat = groupChat; else activeChat = globalChat;
+            appendSystemMessage(`--- ${chatMode} CHAT ---`); activeChat.forEach(c => addMessageToUI(c.sender, c.msg, c.isMine));
         }
     </script>
 </body>
